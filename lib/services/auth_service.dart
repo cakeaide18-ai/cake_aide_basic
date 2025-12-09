@@ -1,0 +1,213 @@
+import 'dart:math';
+import 'package:flutter/foundation.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:crypto/crypto.dart';
+import 'dart:convert';
+import 'package:sentry_flutter/sentry_flutter.dart';
+
+class AuthService {
+  static final FirebaseAuth _auth = FirebaseAuth.instance;
+  static String? lastAuthErrorMessage;
+
+  /// Sign in with Google and Firebase
+  static Future<User?> signInWithGoogle() async {
+    try {
+      final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+      googleProvider.addScope('email');
+      googleProvider.addScope('profile');
+      
+      if (kIsWeb) {
+        final UserCredential userCredential = await _auth.signInWithPopup(googleProvider);
+        final user = userCredential.user;
+        if (user != null) {
+          // Attach user to Sentry and Crashlytics
+          try {
+            Sentry.configureScope((scope) => scope.setUser(SentryUser(id: user.uid, email: user.email, username: user.displayName)));
+          } catch (_) {}
+        }
+        return user;
+      } else {
+        final UserCredential userCredential = await _auth.signInWithProvider(googleProvider);
+        final user = userCredential.user;
+        if (user != null) {
+          Sentry.configureScope((scope) => scope.setUser(SentryUser(id: user.uid, email: user.email)));
+        }
+        return user;
+      }
+    } on FirebaseAuthException catch (e) {
+      debugPrint('Google Sign-In FirebaseAuthException: code=${e.code}, message=${e.message}');
+      // Set a helpful message for common misconfigurations
+      if (e.code == 'unauthorized-domain') {
+        final host = Uri.base.host;
+        lastAuthErrorMessage =
+            'Google sign-in is blocked because this domain is not authorized in Firebase Auth (domain: $host). Add it in Firebase Console → Authentication → Settings → Authorized domains.';
+      } else {
+        lastAuthErrorMessage = e.message ?? 'Google sign-in failed. Please try again.';
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Google Sign-In Error: $e');
+      lastAuthErrorMessage = 'Google sign-in failed: $e';
+      return null;
+    }
+  }
+
+  /// Sign in with Apple and Firebase
+  static Future<User?> signInWithApple() async {
+    try {
+      // Reset last error
+      lastAuthErrorMessage = null;
+      // Check if available first
+      if (!await isAppleSignInAvailable()) {
+        debugPrint('Apple Sign-In not available on this platform');
+        lastAuthErrorMessage = 'Apple Sign-In is not available on this platform.';
+        return null;
+      }
+
+      if (kIsWeb) {
+        // On web, prefer popup but gracefully fall back to redirect if the
+        // environment (like Dreamflow Preview) triggers a JS interop type error.
+        final provider = OAuthProvider('apple.com');
+        provider.setCustomParameters({'locale': 'en_US'});
+        try {
+          final cred = await _auth.signInWithPopup(provider);
+          debugPrint('Apple Web Sign-In via popup succeeded for uid=${cred.user?.uid}');
+          return cred.user;
+        } on FirebaseAuthException catch (e) {
+          debugPrint('Apple Web Sign-In FirebaseAuthException: code=${e.code}, message=${e.message}');
+          if (e.code == 'unauthorized-domain') {
+            final host = Uri.base.host;
+            lastAuthErrorMessage =
+                'Apple sign-in is blocked because this domain is not authorized in Firebase Auth (domain: $host). Add it in Firebase Console → Authentication → Settings → Authorized domains.';
+          } else if (e.code == 'operation-not-allowed') {
+            lastAuthErrorMessage =
+                'Apple provider is disabled in Firebase Auth. Enable Apple in Firebase Console → Authentication → Sign-in method.';
+          } else if (e.code == 'popup-blocked' || e.code == 'popup-closed-by-user') {
+            // Fallback to redirect when popup is blocked/closed
+            try {
+              await _auth.signInWithRedirect(provider);
+              debugPrint('Apple Web Sign-In falling back to redirect...');
+            } catch (re) {
+              debugPrint('Apple Web Redirect Sign-In error: $re');
+              lastAuthErrorMessage = e.message ?? 'Apple sign-in failed. Please try again.';
+            }
+          } else {
+            lastAuthErrorMessage = e.message ?? 'Apple sign-in failed. Please try again.';
+          }
+          return null;
+        } catch (e) {
+          // Handle non-Firebase JS interop errors (seen as LegacyJavaScriptObject in Preview)
+          final msg = e.toString();
+          if (msg.contains('LegacyJavaScriptObject') || msg.contains('is not a subtype')) {
+            try {
+              await _auth.signInWithRedirect(provider);
+              debugPrint('Apple Web Sign-In encountered interop error; falling back to redirect...');
+              // After redirect completes, authStateChanges will emit.
+            } catch (re) {
+              debugPrint('Apple Web Redirect Sign-In error: $re');
+              lastAuthErrorMessage = 'Apple sign-in failed: $re';
+            }
+            return null;
+          }
+          rethrow;
+        }
+      } else {
+        // Native (iOS/macOS): use SIWA plugin + Firebase credential with nonce
+        final rawNonce = _generateNonce();
+        final nonce = _sha256ofString(rawNonce);
+
+        final appleCredential = await SignInWithApple.getAppleIDCredential(
+          scopes: const [
+            AppleIDAuthorizationScopes.email,
+            AppleIDAuthorizationScopes.fullName,
+          ],
+          // Provide a SHA256 nonce to bind the ID token to this request
+          nonce: nonce,
+        );
+
+        final oAuthProvider = OAuthProvider('apple.com');
+        final credential = oAuthProvider.credential(
+          idToken: appleCredential.identityToken,
+          rawNonce: rawNonce,
+        );
+
+        final UserCredential userCredential = await _auth.signInWithCredential(credential);
+
+        // Update display name if provided
+        if (appleCredential.givenName != null && userCredential.user != null) {
+          final displayName = '${appleCredential.givenName} ${appleCredential.familyName ?? ''}'.trim();
+          await userCredential.user!.updateDisplayName(displayName);
+        }
+
+        return userCredential.user;
+      }
+    } catch (e) {
+      debugPrint('Apple Sign-In Error: $e');
+      lastAuthErrorMessage = 'Apple sign-in failed: $e';
+      return null;
+    }
+  }
+
+  /// Check if Apple Sign-In is available
+  static Future<bool> isAppleSignInAvailable() async {
+    try {
+      // On web, Apple Sign-In is available
+      if (kIsWeb) return true;
+      
+      // On mobile, check platform availability
+      return await SignInWithApple.isAvailable();
+    } catch (e) {
+      debugPrint('Error checking Apple Sign-In availability: $e');
+      return false;
+    }
+  }
+
+  /// Handle pending redirect result on web (should be called after Firebase init)
+  static Future<void> handleRedirectSignInIfAny() async {
+    if (!kIsWeb) return;
+    try {
+      final result = await _auth.getRedirectResult();
+      if (result.user != null) {
+        debugPrint('Completed OAuth redirect sign-in for uid=${result.user!.uid}');
+      }
+    } on FirebaseAuthException catch (e) {
+      debugPrint('getRedirectResult FirebaseAuthException: code=${e.code}, message=${e.message}');
+      if (e.code == 'unauthorized-domain') {
+        final host = Uri.base.host;
+        lastAuthErrorMessage =
+            'This domain is not authorized in Firebase Auth (domain: $host). Add it in Firebase Console → Authentication → Settings → Authorized domains.';
+      }
+    } catch (e) {
+      debugPrint('getRedirectResult error: $e');
+    }
+  }
+
+  // ---- Helpers for nonce hashing ----
+  static String _generateNonce([int length = 32]) {
+    const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List.generate(length, (_) => charset[random.nextInt(charset.length)]).join();
+  }
+
+  static String _sha256ofString(String input) {
+    final bytes = utf8.encode(input);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
+  }
+
+  /// Sign out from all providers
+  static Future<void> signOut() async {
+    await _auth.signOut();
+    Sentry.configureScope((scope) => scope.setUser(null));
+  }
+
+  /// Get current user
+  static User? get currentUser => _auth.currentUser;
+
+  /// Check if user is signed in
+  static bool get isSignedIn => _auth.currentUser != null;
+
+  /// Stream of auth state changes
+  static Stream<User?> get authStateChanges => _auth.authStateChanges();
+}

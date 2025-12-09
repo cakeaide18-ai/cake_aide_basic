@@ -1,0 +1,47 @@
+# Flutter/Dart
+.dart_tool/
+.packages
+.pub/
+build/
+coverage/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# IDE settings
+.idea/
+.vscode/
+*.code-workspace
+
+# macOS
+.DS_Store
+
+# iOS
+ios/Pods/
+ios/Flutter/ephemeral/
+ios/.symlinks/
+ios/Runner.xcworkspace/xcuserdata/
+ios/Runner.xcodeproj/project.xcworkspace/xcuserdata/
+ios/Runner/Assets.xcassets/*
+ios/Flutter/Flutter.podspec
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+**/captures/
+
+# Signing secrets (do NOT commit)
+android/key.properties
+android/app/upload-keystore.jks
+android/keystore/
+android/app/keystore/
+android/app/keystore/**
+
+# Web build outputs
+web/.dart_tool/
+web/build/
+
+# Environment files
+.env
+.env.*

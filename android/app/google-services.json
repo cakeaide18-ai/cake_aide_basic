@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "939745556996",
+    "project_id": "dlgrijpah7jlvfjuexnmcmv4p0rmbc",
+    "storage_bucket": "dlgrijpah7jlvfjuexnmcmv4p0rmbc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:939745556996:android:a86036dca601d6b6531351",
+        "android_client_info": {
+          "package_name": "com.cakeaide.cakeaideapp2"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "939745556996-ttp4caunivrq1j5e91jl5nrhu1icl1cl.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.cakeaide.cakeaideapp2",
+            "certificate_hash": "8238b4294e21fed681c2bff8b2d5df06edc797fa"
+          }
+        },
+        {
+          "client_id": "939745556996-8km0209vojk9ffdkcnv27ud41oncq9bv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDCx72OZXB_xREZURD7P_R5FDQBbkhXoHc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "939745556996-8km0209vojk9ffdkcnv27ud41oncq9bv.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "939745556996-e5m5tm420e6qptnnltadd67vn2hi71ph.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.cakeaide.cakeaideapp2",
+                "app_store_id": "6751550421"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
