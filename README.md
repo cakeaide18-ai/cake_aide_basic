@@ -34,3 +34,5 @@ flutter build apk --dart-define=SUPABASE_ANON_KEY=your_key_here
 Note: the repository no longer contains a fallback anon key in source. This
 prevents accidental use of an embedded key and encourages explicit configuration
 for different environments.
+
+
