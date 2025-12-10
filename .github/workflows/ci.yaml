@@ -28,18 +28,18 @@ jobs:
           FLUTTER_VERSION=3.24.5
           curl -L "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz" -o flutter.tar.xz
           sudo tar xf flutter.tar.xz -C /opt
-          echo "export PATH=/opt/flutter/bin:\$PATH" >> $GITHUB_ENV
+          echo "/opt/flutter/bin" >> $GITHUB_PATH
       - name: Flutter doctor
         run: |
           echo "PATH is $PATH"
-          flutter --version
-          flutter doctor -v
+          /opt/flutter/bin/flutter --version
+          /opt/flutter/bin/flutter doctor -v
       - name: Install dependencies
-        run: flutter pub get
+        run: /opt/flutter/bin/flutter pub get
       - name: Analyze
-        run: flutter analyze
+        run: /opt/flutter/bin/flutter analyze
       - name: Run tests
-        run: flutter test --coverage --reporter expanded
+        run: /opt/flutter/bin/flutter test --coverage --reporter expanded
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
         if: always()
@@ -71,21 +71,21 @@ jobs:
           FLUTTER_VERSION=3.24.5
           curl -L "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz" -o flutter.tar.xz
           sudo tar xf flutter.tar.xz -C /opt
-          echo "export PATH=/opt/flutter/bin:\$PATH" >> $GITHUB_ENV
+          echo "/opt/flutter/bin" >> $GITHUB_PATH
       - name: Flutter doctor
         run: |
           echo "PATH is $PATH"
-          flutter --version
-          flutter doctor -v
+          /opt/flutter/bin/flutter --version
+          /opt/flutter/bin/flutter doctor -v
       - name: Ensure required secrets are provided (Supabase only)
         run: |
           if [ -z "$SUPABASE_ANON_KEY" ]; then echo "SUPABASE_ANON_KEY secret is not set"; exit 1; fi
       - name: Install dependencies
-        run: flutter pub get
+        run: /opt/flutter/bin/flutter pub get
       - name: Analyze and Test
         run: |
-          flutter analyze
-          flutter test
+          /opt/flutter/bin/flutter analyze
+          /opt/flutter/bin/flutter test
       - name: Upload test results (if any)
         uses: actions/upload-artifact@v4
         if: always()
