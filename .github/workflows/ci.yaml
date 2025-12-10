@@ -12,15 +12,40 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - name: Cache Pub packages
+        uses: actions/cache@v4
         with:
-          flutter-version: 'stable'
+          path: |
+            ~/.pub-cache
+            .dart_tool
+          key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            pub-${{ runner.os }}-
+      - name: Install Flutter SDK (manual)
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y xz-utils curl git
+          FLUTTER_VERSION=3.24.5
+          curl -L "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz" -o flutter.tar.xz
+          sudo tar xf flutter.tar.xz -C /opt
+          echo "export PATH=/opt/flutter/bin:\$PATH" >> $GITHUB_ENV
+      - name: Flutter doctor
+        run: |
+          echo "PATH is $PATH"
+          flutter --version
+          flutter doctor -v
       - name: Install dependencies
         run: flutter pub get
       - name: Analyze
         run: flutter analyze
       - name: Run tests
-        run: flutter test --coverage
+        run: flutter test --coverage --reporter expanded
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/
 
   build-release:
     name: Build & Validate Release (main)
@@ -28,19 +53,42 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     env:
       SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-      SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - name: Cache Pub packages
+        uses: actions/cache@v4
         with:
-          flutter-version: 'stable'
-      - name: Ensure required secrets are provided
+          path: |
+            ~/.pub-cache
+            .dart_tool
+          key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            pub-${{ runner.os }}-
+      - name: Install Flutter SDK (manual)
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y xz-utils curl git
+          FLUTTER_VERSION=3.24.5
+          curl -L "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz" -o flutter.tar.xz
+          sudo tar xf flutter.tar.xz -C /opt
+          echo "export PATH=/opt/flutter/bin:\$PATH" >> $GITHUB_ENV
+      - name: Flutter doctor
+        run: |
+          echo "PATH is $PATH"
+          flutter --version
+          flutter doctor -v
+      - name: Ensure required secrets are provided (Supabase only)
         run: |
           if [ -z "$SUPABASE_ANON_KEY" ]; then echo "SUPABASE_ANON_KEY secret is not set"; exit 1; fi
-          if [ -z "$SENTRY_DSN" ]; then echo "SENTRY_DSN secret is not set"; exit 1; fi
       - name: Install dependencies
         run: flutter pub get
       - name: Analyze and Test
         run: |
           flutter analyze
           flutter test
+      - name: Upload test results (if any)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: build/
