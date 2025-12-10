@@ -31,6 +31,8 @@ jobs:
           echo "/opt/flutter/bin" >> $GITHUB_PATH
           # Also export PATH in the current shell so subsequent commands in this step can use flutter
           export PATH="/opt/flutter/bin:$PATH"
+      - name: Fix Flutter SDK cache permissions
+        run: sudo chown -R $(whoami) /opt/flutter/bin/cache
       - name: Flutter doctor
         run: |
           echo "PATH is $PATH"
@@ -76,6 +78,8 @@ jobs:
           echo "/opt/flutter/bin" >> $GITHUB_PATH
           # Also export PATH in the current shell so subsequent commands in this step can use flutter
           export PATH="/opt/flutter/bin:$PATH"
+      - name: Fix Flutter SDK cache permissions
+        run: sudo chown -R $(whoami) /opt/flutter/bin/cache
       - name: Flutter doctor
         run: |
           echo "PATH is $PATH"
