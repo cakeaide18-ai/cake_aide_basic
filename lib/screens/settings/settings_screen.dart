@@ -1006,7 +1006,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeThumbColor: Theme.of(context).colorScheme.primary,
+            thumbColor: WidgetStateProperty.all(Theme.of(context).colorScheme.primary),
           ),
         ],
       ),
@@ -1157,7 +1157,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               );
               if (mounted) setState(() {});
             },
-            activeThumbColor: Theme.of(context).colorScheme.primary,
+            thumbColor: WidgetStateProperty.all(Theme.of(context).colorScheme.primary),
           ),
         ],
       ),
