@@ -26,10 +26,12 @@ Future<void> main() async {
   // production rollouts without observability. Provide via
   // --dart-define=SENTRY_DSN=... in CI or local runs.
   const sentryDsn = String.fromEnvironment('SENTRY_DSN', defaultValue: '');
-  final sentryEnv = String.fromEnvironment('SENTRY_ENV', defaultValue: 'production');
-  final sentryRelease = String.fromEnvironment('GIT_SHA', defaultValue: 'unknown');
-  final tracesRate = double.tryParse(String.fromEnvironment('SENTRY_TRACES_SAMPLE_RATE', defaultValue: '0.0')) ?? 0.0;
-  final allowSendUserEmail = String.fromEnvironment('SENTRY_ALLOW_SEND_USER_EMAIL', defaultValue: '0') == '1';
+  const sentryEnv = String.fromEnvironment('SENTRY_ENV', defaultValue: 'production');
+  const sentryRelease = String.fromEnvironment('GIT_SHA', defaultValue: 'unknown');
+  const sentryTracesSampleRateStr = String.fromEnvironment('SENTRY_TRACES_SAMPLE_RATE', defaultValue: '0.0');
+  final tracesRate = double.tryParse(sentryTracesSampleRateStr) ?? 0.0;
+  const allowSendUserEmailStr = String.fromEnvironment('SENTRY_ALLOW_SEND_USER_EMAIL', defaultValue: '0');
+  const allowSendUserEmail = allowSendUserEmailStr == '1';
 
   if (sentryDsn.isNotEmpty) {
     // Fail fast in non-debug to enforce observability configuration in CI/release.
