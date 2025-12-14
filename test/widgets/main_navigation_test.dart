@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class TestMainNavigation extends StatefulWidget {
   const TestMainNavigation({super.key});
@@ -37,13 +36,9 @@ class _TestMainNavigationState extends State<TestMainNavigation> {
 
 void main() {
   testWidgets('MainNavigation shows tabs and can switch', (tester) async {
-    // Initialize Supabase with dummy values so any code referencing the
-    // client won't fail during widget build.
-    await Supabase.initialize(
-      url: 'https://example.supabase.co',
-      anonKey: 'test-anon-key',
-      debug: false,
-    );
+    // Note: Removed Supabase.initialize() to avoid HTTP requests in tests.
+    // The TestMainNavigation widget doesn't actually depend on Supabase,
+    // so initialization is not needed for this test.
 
     await tester.pumpWidget(const MaterialApp(home: TestMainNavigation()));
 
