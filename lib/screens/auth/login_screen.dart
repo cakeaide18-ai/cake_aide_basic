@@ -71,18 +71,47 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _loginWithApple() async {
-    final user = await AuthService.signInWithApple();
-    if (!mounted) return;
-    
-    if (user != null) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const MainNavigation()),
-      );
-    } else {
-      final message = AuthService.lastAuthErrorMessage ?? 'Apple sign-in failed. Please try again.';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+    try {
+      debugPrint('LoginScreen: Starting Apple Sign In');
+      final user = await AuthService.signInWithApple();
+      debugPrint('LoginScreen: Apple Sign In completed, user: ${user?.uid}');
+      
+      if (!mounted) {
+        debugPrint('LoginScreen: Widget not mounted, skipping navigation');
+        return;
+      }
+      
+      if (user != null) {
+        debugPrint('LoginScreen: Navigating to MainNavigation');
+        // Note: The auth state listener will also trigger navigation,
+        // but Navigator handles duplicate routes gracefully
+        try {
+          await Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const MainNavigation()),
+          );
+          debugPrint('LoginScreen: Navigation completed successfully');
+        } catch (e, st) {
+          debugPrint('LoginScreen: Navigation failed: $e\n$st');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Navigation error: $e')),
+            );
+          }
+        }
+      } else {
+        final message = AuthService.lastAuthErrorMessage ?? 'Apple sign-in failed. Please try again.';
+        debugPrint('LoginScreen: Apple Sign In failed: $message');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      }
+    } catch (e, st) {
+      debugPrint('LoginScreen: Apple Sign In error: $e\n$st');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Sign in error: $e')),
+        );
+      }
     }
   }
 

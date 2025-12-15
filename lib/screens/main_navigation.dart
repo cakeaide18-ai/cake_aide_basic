@@ -32,13 +32,47 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [
-    const HomeScreen(),
-    const IngredientsScreen(),
-    const SuppliesScreen(),
-    const RecipesScreen(),
-    const QuotesScreen(),
+  @override
+  void initState() {
+    super.initState();
+    debugPrint('MainNavigation: Initializing');
+  }
+
+  late final List<Widget> _screens = [
+    _buildScreenWithErrorHandler('Home', const HomeScreen()),
+    _buildScreenWithErrorHandler('Ingredients', const IngredientsScreen()),
+    _buildScreenWithErrorHandler('Supplies', const SuppliesScreen()),
+    _buildScreenWithErrorHandler('Recipes', const RecipesScreen()),
+    _buildScreenWithErrorHandler('Quotes', const QuotesScreen()),
   ];
+
+  Widget _buildScreenWithErrorHandler(String screenName, Widget screen) {
+    return Builder(
+      builder: (context) {
+        try {
+          debugPrint('MainNavigation: Building $screenName screen');
+          return screen;
+        } catch (e, st) {
+          debugPrint('MainNavigation: Error building $screenName: $e\n$st');
+          return Scaffold(
+            appBar: AppBar(title: Text('Error in $screenName')),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text('Error loading $screenName screen'),
+                  const SizedBox(height: 8),
+                  Text('$e', style: const TextStyle(fontSize: 12)),
+                ],
+              ),
+            ),
+          );
+        }
+      },
+    );
+  }
 
   void _showMoreFeaturesDialog() {
     final moreFeatures = [
