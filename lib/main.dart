@@ -84,8 +84,10 @@ Future<void> main() async {
     }
   }
 
-  // Print the app origin for Firebase Authorized domains setup (web preview)
-  debugPrint('App origin: ${Uri.base.origin}');
+  // Print the app origin for Firebase Authorized domains setup (web preview only)
+  if (kIsWeb) {
+    debugPrint('App origin: ${Uri.base.origin}');
+  }
   debugPrint('[Startup] Phase=bootstrap binding ensured');
 
   // Register Android headless task only on Android. Skip on iOS & Web.
