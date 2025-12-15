@@ -191,13 +191,20 @@ Future<void> _preInitialize() async {
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
-    ).timeout(const Duration(seconds: 10), onTimeout: () {
-      debugPrint('Firebase.initializeApp timed out; proceeding cautiously');
-      return Firebase.app();
+    ).timeout(const Duration(seconds: 10), onTimeout: () async {
+      debugPrint('Firebase.initializeApp timed out; checking if already initialized');
+      // Check if Firebase is already initialized before trying to get the app
+      try {
+        return Firebase.app();
+      } catch (e) {
+        debugPrint('Firebase not initialized and timeout occurred: $e');
+        rethrow;
+      }
     });
     debugPrint('Firebase initialized successfully (StartupGate)');
   } catch (e, st) {
-    debugPrint('Firebase initialization failed (StartupGate): $e\n$st');
+    debugPrint('Firebase initialization failed (StartupGate): $e');
+    // Don't print full stack trace to avoid cluttering console
   }
 
   try {

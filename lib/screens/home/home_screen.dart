@@ -45,8 +45,11 @@ class _HomeScreenState extends State<HomeScreen> {
     _searchController.addListener(_onSearchChanged);
     _loadProfileImage();
     // Load user profile if not already loaded
+    // Wrapped in try-catch to handle cases where Supabase isn't initialized
     if (_authManager.userProfile == null && _authManager.currentUser != null) {
-      _authManager.loadUserProfile();
+      _authManager.loadUserProfile().catchError((e) {
+        debugPrint('Failed to load user profile in HomeScreen: $e');
+      });
     }
   }
 

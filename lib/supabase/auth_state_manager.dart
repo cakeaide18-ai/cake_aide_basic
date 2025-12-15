@@ -23,20 +23,24 @@ class AuthStateManager extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   void _initialize() {
-    // Set initial user
-    _currentUser = SupabaseAuth.currentUser;
+    try {
+      // Set initial user
+      _currentUser = SupabaseAuth.currentUser;
 
-    // Listen to auth state changes
-    SupabaseAuth.authStateChanges.listen((AuthState data) {
-      _currentUser = data.session?.user;
-      
-      if (_currentUser == null) {
-        // User signed out, clear profile
-        _userProfile = null;
-      }
-      
-      notifyListeners();
-    });
+      // Listen to auth state changes
+      SupabaseAuth.authStateChanges.listen((AuthState data) {
+        _currentUser = data.session?.user;
+        
+        if (_currentUser == null) {
+          // User signed out, clear profile
+          _userProfile = null;
+        }
+        
+        notifyListeners();
+      });
+    } catch (e) {
+      debugPrint('AuthStateManager: Supabase not initialized, skipping auth state subscription: $e');
+    }
   }
 
   /// Load user profile from database

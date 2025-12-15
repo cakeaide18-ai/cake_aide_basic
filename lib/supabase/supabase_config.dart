@@ -7,13 +7,14 @@ class SupabaseConfig {
   // The anon key is required at build/run time and must be provided via
   // a compile-time define: `--dart-define=SUPABASE_ANON_KEY=your_key_here`.
   // This repo no longer keeps a fallback anon key in source.
-  static const String anonKey = String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: '');
+  static const anonKey = String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: '');
 
   static Future<void> initialize() async {
     if (anonKey.isEmpty) {
-      // Fail fast: require the key to be explicitly provided to avoid
-      // accidental use of a baked-in secret.
-      throw Exception('SUPABASE_ANON_KEY must be provided via --dart-define');
+      // Skip Supabase initialization if no key provided
+      // This allows the app to run without Supabase for testing
+      debugPrint('SUPABASE_ANON_KEY not provided, skipping Supabase initialization');
+      return;
     }
 
     await Supabase.initialize(
@@ -23,7 +24,23 @@ class SupabaseConfig {
     );
   }
 
-  static SupabaseClient get client => Supabase.instance.client;
+  static SupabaseClient? get clientOrNull {
+    try {
+      return Supabase.instance.client;
+    } catch (e) {
+      debugPrint('Supabase not initialized: $e');
+      return null;
+    }
+  }
+  
+  static SupabaseClient get client {
+    final c = clientOrNull;
+    if (c == null) {
+      throw Exception('Supabase not initialized. Call SupabaseConfig.initialize() first or provide SUPABASE_ANON_KEY');
+    }
+    return c;
+  }
+  
   static GoTrueClient get auth => client.auth;
 }
 
@@ -167,7 +184,14 @@ class SupabaseService {
     int? limit,
   }) async {
     try {
-      dynamic query = SupabaseConfig.client.from(table).select(select ?? '*');
+      // Check if Supabase is initialized
+      final client = SupabaseConfig.clientOrNull;
+      if (client == null) {
+        debugPrint('SupabaseService.select: Supabase not initialized, returning empty list');
+        return [];
+      }
+      
+      dynamic query = client.from(table).select(select ?? '*');
 
       // Apply filters
       if (filters != null) {
@@ -199,7 +223,14 @@ class SupabaseService {
     required Map<String, dynamic> filters,
   }) async {
     try {
-      dynamic query = SupabaseConfig.client.from(table).select(select ?? '*');
+      // Check if Supabase is initialized
+      final client = SupabaseConfig.clientOrNull;
+      if (client == null) {
+        debugPrint('SupabaseService.selectSingle: Supabase not initialized, returning null');
+        return null;
+      }
+      
+      dynamic query = client.from(table).select(select ?? '*');
 
       for (final entry in filters.entries) {
         query = query.eq(entry.key, entry.value);
@@ -217,7 +248,11 @@ class SupabaseService {
     Map<String, dynamic> data,
   ) async {
     try {
-      return await SupabaseConfig.client.from(table).insert(data).select();
+      final client = SupabaseConfig.clientOrNull;
+      if (client == null) {
+        throw Exception('Supabase not initialized');
+      }
+      return await client.from(table).insert(data).select();
     } catch (e) {
       throw _handleDatabaseError('insert', table, e);
     }
@@ -229,7 +264,11 @@ class SupabaseService {
     List<Map<String, dynamic>> data,
   ) async {
     try {
-      return await SupabaseConfig.client.from(table).insert(data).select();
+      final client = SupabaseConfig.clientOrNull;
+      if (client == null) {
+        throw Exception('Supabase not initialized');
+      }
+      return await client.from(table).insert(data).select();
     } catch (e) {
       throw _handleDatabaseError('insertMultiple', table, e);
     }
@@ -242,7 +281,11 @@ class SupabaseService {
     required Map<String, dynamic> filters,
   }) async {
     try {
-      dynamic query = SupabaseConfig.client.from(table).update(data);
+      final client = SupabaseConfig.clientOrNull;
+      if (client == null) {
+        throw Exception('Supabase not initialized');
+      }
+      dynamic query = client.from(table).update(data);
 
       for (final entry in filters.entries) {
         query = query.eq(entry.key, entry.value);
@@ -260,7 +303,11 @@ class SupabaseService {
     required Map<String, dynamic> filters,
   }) async {
     try {
-      dynamic query = SupabaseConfig.client.from(table).delete();
+      final client = SupabaseConfig.clientOrNull;
+      if (client == null) {
+        throw Exception('Supabase not initialized');
+      }
+      dynamic query = client.from(table).delete();
 
       for (final entry in filters.entries) {
         query = query.eq(entry.key, entry.value);
