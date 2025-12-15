@@ -21,17 +21,29 @@ class AuthService {
         final UserCredential userCredential = await _auth.signInWithPopup(googleProvider);
         final user = userCredential.user;
         if (user != null) {
-          // Attach user to Sentry and Crashlytics
+          // Attach user to Sentry (non-blocking)
           try {
-            Sentry.configureScope((scope) => scope.setUser(SentryUser(id: user.uid, email: user.email, username: user.displayName)));
-          } catch (_) {}
+            Sentry.configureScope((scope) => scope.setUser(
+              SentryUser(id: user.uid, email: user.email, username: user.displayName),
+            ));
+            debugPrint('Google Sign-In (Web): Configured Sentry for user ${user.uid}');
+          } catch (e) {
+            debugPrint('Google Sign-In (Web): Failed to configure Sentry (non-fatal): $e');
+          }
         }
         return user;
       } else {
         final UserCredential userCredential = await _auth.signInWithProvider(googleProvider);
         final user = userCredential.user;
         if (user != null) {
-          Sentry.configureScope((scope) => scope.setUser(SentryUser(id: user.uid, email: user.email)));
+          try {
+            Sentry.configureScope((scope) => scope.setUser(
+              SentryUser(id: user.uid, email: user.email, username: user.displayName),
+            ));
+            debugPrint('Google Sign-In (Native): Configured Sentry for user ${user.uid}');
+          } catch (e) {
+            debugPrint('Google Sign-In (Native): Failed to configure Sentry (non-fatal): $e');
+          }
         }
         return user;
       }
@@ -134,10 +146,31 @@ class AuthService {
 
         final UserCredential userCredential = await _auth.signInWithCredential(credential);
 
-        // Update display name if provided
+        // Update display name if provided (non-blocking, don't fail sign-in if this fails)
         if (appleCredential.givenName != null && userCredential.user != null) {
-          final displayName = '${appleCredential.givenName} ${appleCredential.familyName ?? ''}'.trim();
-          await userCredential.user!.updateDisplayName(displayName);
+          try {
+            final displayName = '${appleCredential.givenName} ${appleCredential.familyName ?? ''}'.trim();
+            await userCredential.user!.updateDisplayName(displayName);
+            debugPrint('Apple Sign-In: Updated display name to: $displayName');
+          } catch (e) {
+            debugPrint('Apple Sign-In: Failed to update display name (non-fatal): $e');
+            // Don't fail the sign-in process if display name update fails
+          }
+        }
+
+        // Attach user to Sentry (non-blocking)
+        try {
+          if (userCredential.user != null) {
+            Sentry.configureScope((scope) => scope.setUser(
+              SentryUser(
+                id: userCredential.user!.uid,
+                email: userCredential.user!.email,
+                username: userCredential.user!.displayName,
+              ),
+            ));
+          }
+        } catch (e) {
+          debugPrint('Apple Sign-In: Failed to configure Sentry (non-fatal): $e');
         }
 
         return userCredential.user;
