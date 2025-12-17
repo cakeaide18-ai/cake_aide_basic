@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cake_aide_basic/models/shopping_list.dart';
-import 'package:cake_aide_basic/services/data_service.dart';
+import 'package:cake_aide_basic/repositories/shopping_list_repository.dart';
 import 'package:cake_aide_basic/screens/shopping_list/add_shopping_list_screen.dart';
 import 'package:cake_aide_basic/screens/shopping_list/shopping_list_details_screen.dart';
 import 'package:cake_aide_basic/theme.dart';
@@ -14,7 +14,7 @@ class ShoppingListScreen extends StatefulWidget {
 }
 
 class _ShoppingListScreenState extends State<ShoppingListScreen> {
-  final DataService _dataService = DataService();
+  final ShoppingListRepository _repository = ShoppingListRepository();
 
   void _deleteShoppingList(String id) {
     showDialog(
@@ -28,14 +28,22 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              setState(() {
-                _dataService.deleteShoppingList(id);
-              });
+            onPressed: () async {
               Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Shopping list deleted')),
-              );
+              try {
+                await _repository.delete(id);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Shopping list deleted')),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error deleting list: $e')),
+                  );
+                }
+              }
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
@@ -112,8 +120,47 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final shoppingLists = _dataService.shoppingLists;
+    
+    return StreamBuilder<List<ShoppingList>>(
+      stream: _repository.getStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            appBar: _buildAppBar(context),
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
 
+        if (snapshot.hasError) {
+          return Scaffold(
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            appBar: _buildAppBar(context),
+            body: Center(
+              child: Text('Error loading shopping lists: ${snapshot.error}'),
+            ),
+          );
+        }
+
+        final shoppingLists = snapshot.data ?? [];
+        return _buildScaffold(context, theme, shoppingLists);
+      },
+    );
+  }
+
+  AppBar _buildAppBar(BuildContext context) {
+    return AppBar(
+      title: const Text('Shopping Lists'),
+      flexibleSpace: Container(
+        decoration: BoxDecoration(
+          gradient: GradientDecorations.primaryGradient,
+        ),
+      ),
+      foregroundColor: Colors.white,
+    );
+  }
+
+  Widget _buildScaffold(BuildContext context, ThemeData theme, List<ShoppingList> shoppingLists) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(

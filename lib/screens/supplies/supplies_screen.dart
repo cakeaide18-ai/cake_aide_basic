@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cake_aide_basic/models/supply.dart';
-import 'package:cake_aide_basic/services/data_service.dart';
+import 'package:cake_aide_basic/repositories/supply_repository.dart';
 import 'package:cake_aide_basic/screens/supplies/add_supply_screen.dart';
 import 'package:cake_aide_basic/theme.dart';
 import 'package:cake_aide_basic/widgets/supply_icon.dart';
@@ -13,11 +13,64 @@ class SuppliesScreen extends StatefulWidget {
 }
 
 class _SuppliesScreenState extends State<SuppliesScreen> {
-  final DataService _dataService = DataService();
+  final SupplyRepository _repository = SupplyRepository();
 
   @override
   Widget build(BuildContext context) {
-    final supplies = _dataService.supplies;
+    return StreamBuilder<List<Supply>>(
+      stream: _repository.getStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            appBar: _buildAppBar(context),
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Scaffold(
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            appBar: _buildAppBar(context),
+            body: Center(
+              child: Text('Error loading supplies: ${snapshot.error}'),
+            ),
+          );
+        }
+
+        final supplies = snapshot.data ?? [];
+        return _buildScaffold(context, supplies);
+      },
+    );
+  }
+
+  AppBar _buildAppBar(BuildContext context) {
+    return AppBar(
+      title: const Text('Supplies'),
+      flexibleSpace: Container(
+        decoration: BoxDecoration(
+          gradient: GradientDecorations.primaryGradient,
+        ),
+      ),
+      foregroundColor: Colors.white,
+      actions: [
+        IconButton(
+          onPressed: () async {
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AddSupplyScreen()),
+            );
+            if (result == true) {
+              setState(() {});
+            }
+          },
+          icon: const Icon(Icons.add),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildScaffold(BuildContext context, List<Supply> supplies) {
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -242,10 +295,17 @@ class _SuppliesScreenState extends State<SuppliesScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              _dataService.deleteSupply(supply.id);
-              setState(() {});
+            onPressed: () async {
               Navigator.pop(context);
+              try {
+                await _repository.delete(supply.id);
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error deleting supply: $e')),
+                  );
+                }
+              }
             },
             child: const Text('Delete'),
           ),

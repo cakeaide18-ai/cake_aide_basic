@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cake_aide_basic/models/supply.dart';
-import 'package:cake_aide_basic/services/data_service.dart';
+import 'package:cake_aide_basic/repositories/supply_repository.dart';
 import 'package:cake_aide_basic/services/settings_service.dart';
 import 'package:cake_aide_basic/theme.dart';
 import 'package:cake_aide_basic/widgets/supply_icon.dart';
@@ -25,7 +25,7 @@ class _AddSupplyScreenState extends State<AddSupplyScreen> {
 
   final List<String> _units = ['pieces', 'boxes', 'packs', 'dozens', 'sets', 'grams', 'kilograms', 'ounces', 'pounds'];
 
-  final DataService _dataService = DataService();
+  final SupplyRepository _repository = SupplyRepository();
   final SettingsService _settingsService = SettingsService();
   
   bool get _isEditing => widget.supply != null;
@@ -56,11 +56,11 @@ class _AddSupplyScreenState extends State<AddSupplyScreen> {
     super.dispose();
   }
 
-  void _saveSupply() {
+  Future<void> _saveSupply() async {
     if (_formKey.currentState!.validate()) {
       try {
         final supply = Supply(
-          id: _isEditing ? widget.supply!.id : _dataService.generateId(),
+          id: _isEditing ? widget.supply!.id : '',
           name: _nameController.text.trim(),
           brand: _brandController.text.trim(),
           price: double.parse(_priceController.text.trim()),
@@ -70,7 +70,7 @@ class _AddSupplyScreenState extends State<AddSupplyScreen> {
         );
 
         if (_isEditing) {
-          _dataService.updateSupply(widget.supply!.id, supply);
+          await _repository.update(widget.supply!.id, supply);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -80,7 +80,7 @@ class _AddSupplyScreenState extends State<AddSupplyScreen> {
             );
           }
         } else {
-          _dataService.addSupply(supply);
+          await _repository.add(supply);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -90,7 +90,9 @@ class _AddSupplyScreenState extends State<AddSupplyScreen> {
             );
           }
         }
-        Navigator.pop(context, true);
+        if (mounted) {
+          Navigator.pop(context, true);
+        }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

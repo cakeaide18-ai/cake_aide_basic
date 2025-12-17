@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cake_aide_basic/models/order.dart';
-import 'package:cake_aide_basic/services/data_service.dart';
+import 'package:cake_aide_basic/repositories/order_repository.dart';
 import 'package:cake_aide_basic/screens/orders/add_order_screen.dart';
 import 'package:cake_aide_basic/screens/orders/edit_order_screen.dart';
 import 'package:cake_aide_basic/theme.dart';
@@ -15,14 +15,52 @@ class OrdersScreen extends StatefulWidget {
 }
 
 class _OrdersScreenState extends State<OrdersScreen> {
-  final DataService _dataService = DataService();
+  final OrderRepository _repository = OrderRepository();
   final SettingsService _settingsService = SettingsService();
   final TextEditingController _searchController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
-    final orders = _dataService.orders;
+    return StreamBuilder<List<Order>>(
+      stream: _repository.getStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            appBar: _buildAppBar(context),
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
 
+        if (snapshot.hasError) {
+          return Scaffold(
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            appBar: _buildAppBar(context),
+            body: Center(
+              child: Text('Error loading orders: ${snapshot.error}'),
+            ),
+          );
+        }
+
+        final orders = snapshot.data ?? [];
+        return _buildScaffold(context, orders);
+      },
+    );
+  }
+
+  AppBar _buildAppBar(BuildContext context) {
+    return AppBar(
+      title: const Text('Order Tracking'),
+      flexibleSpace: Container(
+        decoration: BoxDecoration(
+          gradient: GradientDecorations.primaryGradient,
+        ),
+      ),
+      foregroundColor: Colors.white,
+    );
+  }
+
+  Widget _buildScaffold(BuildContext context, List<Order> orders) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
@@ -445,10 +483,17 @@ class _OrdersScreenState extends State<OrdersScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              _dataService.deleteOrder(order.id);
-              setState(() {});
+            onPressed: () async {
               Navigator.pop(context);
+              try {
+                await _repository.delete(order.id);
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error deleting order: $e')),
+                  );
+                }
+              }
             },
             child: const Text('Delete'),
           ),

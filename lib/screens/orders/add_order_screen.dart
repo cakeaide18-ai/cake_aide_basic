@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cake_aide_basic/models/order.dart';
-import 'package:cake_aide_basic/services/data_service.dart';
+import 'package:cake_aide_basic/repositories/order_repository.dart';
 import 'package:cake_aide_basic/services/settings_service.dart';
 
 class AddOrderScreen extends StatefulWidget {
@@ -16,7 +16,7 @@ class AddOrderScreen extends StatefulWidget {
 
 class _AddOrderScreenState extends State<AddOrderScreen> {
   final _formKey = GlobalKey<FormState>();
-  final DataService _dataService = DataService();
+  final OrderRepository _repository = OrderRepository();
   final SettingsService _settingsService = SettingsService();
 
   // Form controllers
@@ -489,7 +489,7 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
       }
 
       final order = Order(
-        id: _dataService.generateId(),
+        id: '',
         name: _orderNameController.text.trim(),
         customerName: _customerNameController.text.trim(),
         customerPhone: _customerPhoneController.text.trim(),
@@ -509,16 +509,17 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
         updatedAt: DateTime.now(),
       );
 
-      _dataService.addOrder(order);
+      await _repository.add(order);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Order added successfully!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-
-      Navigator.pop(context);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Order added successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
+      }
     }
   }
 

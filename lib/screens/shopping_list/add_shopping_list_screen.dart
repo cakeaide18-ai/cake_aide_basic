@@ -3,7 +3,10 @@ import 'package:cake_aide_basic/models/shopping_list.dart';
 import 'package:cake_aide_basic/models/recipe.dart';
 import 'package:cake_aide_basic/models/supply.dart';
 import 'package:cake_aide_basic/models/ingredient.dart';
-import 'package:cake_aide_basic/services/data_service.dart';
+import 'package:cake_aide_basic/repositories/shopping_list_repository.dart';
+import 'package:cake_aide_basic/repositories/recipe_repository.dart';
+import 'package:cake_aide_basic/repositories/supply_repository.dart';
+import 'package:cake_aide_basic/repositories/ingredient_repository.dart';
 import 'package:cake_aide_basic/screens/shopping_list/shopping_list_details_screen.dart';
 import 'package:cake_aide_basic/theme.dart';
 
@@ -29,16 +32,44 @@ class _AddShoppingListScreenState extends State<AddShoppingListScreen> {
   final List<ShoppingListRecipe> _recipes = [];
   final List<ShoppingListSupply> _supplies = [];
   final List<ShoppingListIngredient> _ingredients = [];
-  final DataService _dataService = DataService();
+  
+  final ShoppingListRepository _repository = ShoppingListRepository();
+  final RecipeRepository _recipeRepository = RecipeRepository();
+  final SupplyRepository _supplyRepository = SupplyRepository();
+  final IngredientRepository _ingredientRepository = IngredientRepository();
+  
+  List<Recipe> _availableRecipes = [];
+  List<Supply> _availableSupplies = [];
+  List<Ingredient> _availableIngredients = [];
 
   @override
   void initState() {
     super.initState();
+    _loadData();
     if (widget.shoppingList != null) {
       _nameController.text = widget.shoppingList!.name;
       _recipes.addAll(widget.shoppingList!.recipes);
       _supplies.addAll(widget.shoppingList!.supplies);
       _ingredients.addAll(widget.shoppingList!.ingredients);
+    }
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final recipes = await _recipeRepository.getAll();
+      final supplies = await _supplyRepository.getAll();
+      final ingredients = await _ingredientRepository.getAll();
+      setState(() {
+        _availableRecipes = recipes;
+        _availableSupplies = supplies;
+        _availableIngredients = ingredients;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading data: $e')),
+        );
+      }
     }
   }
 
@@ -117,7 +148,7 @@ class _AddShoppingListScreenState extends State<AddShoppingListScreen> {
     });
   }
 
-  void _saveShoppingList() {
+  Future<void> _saveShoppingList() async {
     if (_formKey.currentState!.validate()) {
       final shoppingList = ShoppingList(
         id: widget.shoppingList?.id ?? '',
@@ -128,20 +159,25 @@ class _AddShoppingListScreenState extends State<AddShoppingListScreen> {
       );
       try {
         if (widget.shoppingList != null) {
-          _dataService.updateShoppingList(shoppingList.id, shoppingList);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Shopping list updated successfully!')),
-          );
-          Navigator.of(context).pop();
+          await _repository.update(shoppingList.id, shoppingList);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Shopping list updated successfully!')),
+            );
+            Navigator.of(context).pop();
+          }
         } else {
-          _dataService.addShoppingList(shoppingList);
+          final docId = await _repository.add(shoppingList);
+          final savedList = shoppingList.copyWith(id: docId);
           
-          // Navigate to shopping list details page
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (context) => ShoppingListDetailsScreen(shoppingList: shoppingList),
-            ),
-          );
+          if (mounted) {
+            // Navigate to shopping list details page
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (context) => ShoppingListDetailsScreen(shoppingList: savedList),
+              ),
+            );
+          }
         }
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -249,7 +285,7 @@ class _AddShoppingListScreenState extends State<AddShoppingListScreen> {
                           contentPadding: EdgeInsets.all(16),
                         ),
                         hint: const Text('Select Recipe...'),
-                        items: _dataService.recipes.map((recipe) {
+                        items: _availableRecipes.map((recipe) {
                           return DropdownMenuItem(
                             value: recipe,
                             child: Column(
@@ -390,7 +426,7 @@ class _AddShoppingListScreenState extends State<AddShoppingListScreen> {
                           contentPadding: EdgeInsets.all(16),
                         ),
                         hint: const Text('Select Supply...'),
-                        items: _dataService.supplies.map((supply) {
+                        items: _availableSupplies.map((supply) {
                           return DropdownMenuItem(
                             value: supply,
                             child: Text(supply.name),
@@ -515,7 +551,7 @@ class _AddShoppingListScreenState extends State<AddShoppingListScreen> {
                           contentPadding: EdgeInsets.all(16),
                         ),
                         hint: const Text('Select Ingredient...'),
-                        items: _dataService.ingredients.map((ingredient) {
+                        items: _availableIngredients.map((ingredient) {
                           return DropdownMenuItem(
                             value: ingredient,
                             child: Column(

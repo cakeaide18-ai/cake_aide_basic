@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
  import 'package:image_picker/image_picker.dart';
 import 'package:cake_aide_basic/models/order.dart';
-import 'package:cake_aide_basic/services/data_service.dart';
+import 'package:cake_aide_basic/repositories/order_repository.dart';
 import 'package:cake_aide_basic/services/settings_service.dart';
 
 class EditOrderScreen extends StatefulWidget {
@@ -20,7 +20,7 @@ class EditOrderScreen extends StatefulWidget {
 
 class _EditOrderScreenState extends State<EditOrderScreen> {
   final _formKey = GlobalKey<FormState>();
-  final DataService _dataService = DataService();
+  final OrderRepository _repository = OrderRepository();
   final SettingsService _settingsService = SettingsService();
   
   // Form controllers
@@ -568,16 +568,17 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
         updatedAt: DateTime.now(), // Update the modification time
       );
 
-      _dataService.updateOrder(updatedOrder);
+      await _repository.update(updatedOrder.id, updatedOrder);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Order updated successfully!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-
-      Navigator.pop(context);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Order updated successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
+      }
     }
   }
 

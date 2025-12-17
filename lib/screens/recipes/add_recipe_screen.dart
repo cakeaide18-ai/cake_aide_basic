@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cake_aide_basic/models/recipe.dart';
 import 'package:cake_aide_basic/models/ingredient.dart';
-import 'package:cake_aide_basic/services/data_service.dart';
+import 'package:cake_aide_basic/repositories/recipe_repository.dart';
+import 'package:cake_aide_basic/repositories/ingredient_repository.dart';
 import 'package:cake_aide_basic/theme.dart';
 
 class AddRecipeScreen extends StatefulWidget {
@@ -18,10 +19,12 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   final _nameController = TextEditingController();
   final _cakeSizeController = TextEditingController();
   final _scrollController = ScrollController();
-  final DataService _dataService = DataService();
+  final RecipeRepository _repository = RecipeRepository();
+  final IngredientRepository _ingredientRepository = IngredientRepository();
   
   List<RecipeIngredient> _recipeIngredients = [];
   List<TextEditingController> _quantityControllers = [];
+  List<Ingredient> _availableIngredients = [];
   bool get _isEditing => widget.recipe != null;
 
   @override
@@ -30,10 +33,12 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
     if (_isEditing) {
       _nameController.text = widget.recipe!.name;
       _cakeSizeController.text = widget.recipe!.cakeSizePortions;
+      // Store the original recipe ingredients temporarily
       _recipeIngredients = List.from(widget.recipe!.ingredients);
       _quantityControllers = _recipeIngredients.map((ingredient) => 
         TextEditingController(text: ingredient.quantity.toString())).toList();
     }
+    _loadIngredients();
   }
 
   @override
@@ -47,8 +52,38 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
     super.dispose();
   }
 
+  Future<void> _loadIngredients() async {
+    try {
+      final ingredients = await _ingredientRepository.getAll();
+      setState(() {
+        _availableIngredients = ingredients;
+        
+        // If editing, match the recipe ingredients with freshly loaded ones by ID
+        if (_isEditing && _recipeIngredients.isNotEmpty) {
+          // Create a map of ingredient IDs to fresh ingredient objects
+          final ingredientMap = {for (var ing in ingredients) ing.id: ing};
+          
+          // Update recipe ingredients to use fresh ingredient objects
+          _recipeIngredients = _recipeIngredients.map((recipeIng) {
+            final freshIngredient = ingredientMap[recipeIng.ingredient.id];
+            if (freshIngredient != null) {
+              return recipeIng.copyWith(ingredient: freshIngredient);
+            }
+            return recipeIng;
+          }).toList();
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading ingredients: $e')),
+        );
+      }
+    }
+  }
+
   void _addIngredient() {
-    if (_dataService.ingredients.isEmpty) {
+    if (_availableIngredients.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please add ingredients first from the Ingredients page'),
@@ -58,7 +93,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
       return;
     }
     
-    final firstIngredient = _dataService.ingredients.first;
+    final firstIngredient = _availableIngredients.first;
     setState(() {
       _recipeIngredients.add(
         RecipeIngredient(
@@ -79,7 +114,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
     });
   }
 
-  void _saveRecipe() {
+  Future<void> _saveRecipe() async {
     if (!_formKey.currentState!.validate()) return;
     if (_recipeIngredients.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -89,7 +124,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
     }
 
     final recipe = Recipe(
-      id: _isEditing ? widget.recipe!.id : _dataService.generateId(),
+      id: _isEditing ? widget.recipe!.id : '',
       name: _nameController.text.trim(),
       cakeSizePortions: _cakeSizeController.text.trim(),
       ingredients: _recipeIngredients,
@@ -98,21 +133,28 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
 
     try {
       if (_isEditing) {
-        _dataService.updateRecipe(recipe.id, recipe);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Recipe updated successfully!')),
-        );
+        await _repository.update(recipe.id, recipe);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Recipe updated successfully!')),
+          );
+          Navigator.of(context).pop();
+        }
       } else {
-        _dataService.addRecipe(recipe);
+        await _repository.add(recipe);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Recipe added successfully!')),
+          );
+          Navigator.of(context).pop();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Recipe added successfully!')),
+          SnackBar(content: Text('Error saving recipe: $e')),
         );
       }
-      Navigator.of(context).pop();
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error saving recipe: $e')),
-      );
     }
   }
 
@@ -394,7 +436,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
               filled: true,
               fillColor: Colors.white,
             ),
-            items: _dataService.ingredients.isEmpty ? null : _dataService.ingredients.map((ingredient) {
+            items: _availableIngredients.isEmpty ? null : _availableIngredients.map((ingredient) {
               return DropdownMenuItem(
                 value: ingredient,
                 child: Text('${ingredient.name} (${ingredient.brand})'),

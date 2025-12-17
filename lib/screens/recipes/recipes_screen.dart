@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cake_aide_basic/models/recipe.dart';
-import 'package:cake_aide_basic/services/data_service.dart';
+import 'package:cake_aide_basic/repositories/recipe_repository.dart';
 import 'package:cake_aide_basic/screens/recipes/add_recipe_screen.dart';
 import 'package:cake_aide_basic/screens/recipes/recipe_details_screen.dart';
 import 'package:cake_aide_basic/theme.dart';
@@ -14,12 +14,50 @@ class RecipesScreen extends StatefulWidget {
 }
 
 class _RecipesScreenState extends State<RecipesScreen> {
-  final DataService _dataService = DataService();
+  final RecipeRepository _repository = RecipeRepository();
 
   @override
   Widget build(BuildContext context) {
-    final recipes = _dataService.recipes;
+    return StreamBuilder<List<Recipe>>(
+      stream: _repository.getStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            appBar: _buildAppBar(context),
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
 
+        if (snapshot.hasError) {
+          return Scaffold(
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            appBar: _buildAppBar(context),
+            body: Center(
+              child: Text('Error loading recipes: ${snapshot.error}'),
+            ),
+          );
+        }
+
+        final recipes = snapshot.data ?? [];
+        return _buildScaffold(context, recipes);
+      },
+    );
+  }
+
+  AppBar _buildAppBar(BuildContext context) {
+    return AppBar(
+      title: const Text('Recipes'),
+      flexibleSpace: Container(
+        decoration: BoxDecoration(
+          gradient: GradientDecorations.primaryGradient,
+        ),
+      ),
+      foregroundColor: Colors.white,
+    );
+  }
+
+  Widget _buildScaffold(BuildContext context, List<Recipe> recipes) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
@@ -248,13 +286,22 @@ class _RecipesScreenState extends State<RecipesScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              _dataService.deleteRecipe(recipe.id);
+            onPressed: () async {
               Navigator.of(context).pop();
-              setState(() {});
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('${recipe.name} deleted successfully')),
-              );
+              try {
+                await _repository.delete(recipe.id);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('${recipe.name} deleted successfully')),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error deleting recipe: $e')),
+                  );
+                }
+              }
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Delete'),
