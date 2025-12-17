@@ -277,7 +277,7 @@ class CakeAideApp extends StatelessWidget {
           theme: lightTheme,
           darkTheme: darkTheme,
           themeMode: ThemeController.instance.themeMode,
-          home: const LoginScreen(),
+          home: const AuthStateRouter(),
           routes: {
             '/login': (context) => const LoginScreen(),
             '/signup': (context) => const SignupScreen(),
@@ -287,6 +287,38 @@ class CakeAideApp extends StatelessWidget {
         );
         // Wrap with a first-frame watchdog to detect and surface black-screen hangs
         return FirstFrameWatchdog(child: app);
+      },
+    );
+  }
+}
+
+/// Routes to the appropriate screen based on authentication state
+class AuthStateRouter extends StatelessWidget {
+  const AuthStateRouter({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder(
+      stream: AuthService.authStateChanges,
+      builder: (context, snapshot) {
+        // Show loading while checking auth state
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+        
+        // If user is signed in, go to main navigation
+        if (snapshot.hasData && snapshot.data != null) {
+          debugPrint('AuthStateRouter: User signed in, routing to MainNavigation');
+          return const MainNavigation();
+        }
+        
+        // Otherwise show login screen
+        debugPrint('AuthStateRouter: No user, routing to LoginScreen');
+        return const LoginScreen();
       },
     );
   }
