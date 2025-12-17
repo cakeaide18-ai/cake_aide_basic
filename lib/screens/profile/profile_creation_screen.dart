@@ -217,9 +217,16 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
           permission = Permission.photos;
         }
         
-        final status = await permission.request();
+        var status = await permission.status;
         
-        if (status.isDenied || status.isPermanentlyDenied) {
+        // Request permission if not granted
+        if (!status.isGranted && !status.isLimited) {
+          status = await permission.request();
+        }
+        
+        // Allow limited access on iOS (user selected some photos) 
+        // Also allow granted status, but deny denied/restricted/permanentlyDenied
+        if (status.isDenied || status.isPermanentlyDenied || status.isRestricted) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -243,12 +250,15 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
       }
       
       // Pick image
+      debugPrint('Attempting to pick image from ${source == ImageSource.camera ? "camera" : "gallery"}');
       final XFile? image = await _picker.pickImage(
         source: source,
         maxWidth: 500,
         maxHeight: 500,
         imageQuality: 80,
       );
+      
+      debugPrint('Image picked: ${image?.path}');
       
       if (image != null) {
         if (kIsWeb) {
