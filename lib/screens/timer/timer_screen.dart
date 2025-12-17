@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:cake_aide_basic/models/timer_recording.dart';
-import 'package:cake_aide_basic/services/data_service.dart';
+import 'package:cake_aide_basic/repositories/timer_recording_repository.dart';
 import 'package:cake_aide_basic/services/timer_background_service.dart';
 import 'package:cake_aide_basic/theme.dart';
 import 'package:cake_aide_basic/widgets/timer_icon.dart';
@@ -14,7 +14,7 @@ class TimerScreen extends StatefulWidget {
 }
 
 class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
-  final DataService _dataService = DataService();
+  final TimerRecordingRepository _repository = TimerRecordingRepository();
   Timer? _timer;
   Duration _currentDuration = Duration.zero;
   bool _isRunning = false;
@@ -298,10 +298,10 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
     );
   }
 
-  void _saveRecording() {
+  Future<void> _saveRecording() async {
     if (_startTime != null && _currentDuration.inSeconds > 0) {
       final recording = TimerRecording(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: '',
         activity: _currentActivity,
         startTime: _startTime!,
         endTime: _startTime!.add(_currentDuration),
@@ -310,14 +310,28 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
         createdAt: DateTime.now(),
       );
       
-      _dataService.addTimerRecording(recording);
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Time recording saved successfully!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      try {
+        await _repository.add(recording);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Time recording saved successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          setState(() {}); // Refresh the UI to show the new recording
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error saving recording: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -460,82 +474,91 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
             const Spacer(),
 
             // Recent Recordings
-            if (_dataService.timerRecordings.isNotEmpty) ...[
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Recent Recordings',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
+            StreamBuilder<List<TimerRecording>>(
+              stream: _repository.getStream(),
+              builder: (context, snapshot) {
+                final recordings = snapshot.data ?? [];
+                
+                if (recordings.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+                
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Recent Recordings',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            // Navigate to full recordings list
-                            _showAllRecordings();
-                          },
-                          child: const Text('View All'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    ...List.generate(
-                      _dataService.timerRecordings.take(3).length,
-                      (index) {
-                        final recording = _dataService.timerRecordings[index];
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.pink,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  recording.activity,
-                                  style: Theme.of(context).textTheme.bodyMedium,
-                                ),
-                              ),
-                              Text(
-                                _formatDuration(recording.duration),
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Colors.grey[600],
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
+                          TextButton(
+                            onPressed: () {
+                              // Navigate to full recordings list
+                              _showAllRecordings();
+                            },
+                            child: const Text('View All'),
                           ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ],
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ...List.generate(
+                        recordings.take(3).length,
+                        (index) {
+                          final recording = recordings[index];
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.pink,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    recording.activity,
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                ),
+                                Text(
+                                  _formatDuration(recording.duration),
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Colors.grey[600],
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -610,52 +633,75 @@ class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
             ),
             const SizedBox(height: 20),
             Expanded(
-              child: ListView.builder(
-                itemCount: _dataService.timerRecordings.length,
-                itemBuilder: (context, index) {
-                  final recording = _dataService.timerRecordings[index];
-                  return Card(
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    child: ListTile(
-                      leading: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.pink.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Center(
-                          child: TimerIcon(size: 20, fallbackColor: Colors.pink),
-                        ),
-                      ),
-                      title: Text(
-                        recording.activity,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      subtitle: Text(
-                        'Started: ${recording.startTime.hour}:${recording.startTime.minute.toString().padLeft(2, '0')}',
-                      ),
-                      trailing: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            _formatDuration(recording.duration),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.pink,
+              child: StreamBuilder<List<TimerRecording>>(
+                stream: _repository.getStream(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Text('Error loading recordings: ${snapshot.error}'),
+                    );
+                  }
+
+                  final recordings = snapshot.data ?? [];
+
+                  if (recordings.isEmpty) {
+                    return const Center(
+                      child: Text('No recordings yet'),
+                    );
+                  }
+
+                  return ListView.builder(
+                    itemCount: recordings.length,
+                    itemBuilder: (context, index) {
+                      final recording = recordings[index];
+                      return Card(
+                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        child: ListTile(
+                          leading: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: Colors.pink.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Center(
+                              child: TimerIcon(size: 20, fallbackColor: Colors.pink),
                             ),
                           ),
-                          Text(
-                            '${recording.createdAt.day}/${recording.createdAt.month}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
+                          title: Text(
+                            recording.activity,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
-                        ],
-                      ),
-                    ),
+                          subtitle: Text(
+                            'Started: ${recording.startTime.hour}:${recording.startTime.minute.toString().padLeft(2, '0')}',
+                          ),
+                          trailing: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                _formatDuration(recording.duration),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.pink,
+                                ),
+                              ),
+                              Text(
+                                '${recording.createdAt.day}/${recording.createdAt.month}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   );
                 },
               ),
