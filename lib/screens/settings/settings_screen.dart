@@ -1482,7 +1482,7 @@ class AboutUsDialog extends StatelessWidget {
                 text: TextSpan(
                   style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   children: [
-                    const TextSpan(text: 'Version 1.0.0\n© 2025 CakeAide Pro. '),
+                    const TextSpan(text: 'Version 1.0.1\n© 2025 CakeAide Pro. '),
                     TextSpan(
                       text: 'Icons by Icons8',
                       style: TextStyle(
