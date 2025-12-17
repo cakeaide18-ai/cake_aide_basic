@@ -466,7 +466,7 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
     }
   }
 
-  void _saveOrder() {
+  void _saveOrder() async {
     if (_formKey.currentState!.validate()) {
       if (_deliveryDate == null) {
         ScaffoldMessenger.of(context).showSnackBar(

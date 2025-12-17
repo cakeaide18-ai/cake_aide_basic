@@ -81,7 +81,7 @@ class _AddIngredientScreenState extends State<AddIngredientScreen> {
         );
 
         if (isEditing) {
-          await _repository.update(ingredient);
+          await _repository.update(ingredient.id, ingredient);
         } else {
           await _repository.add(ingredient);
         }
@@ -102,11 +102,12 @@ class _AddIngredientScreenState extends State<AddIngredientScreen> {
         // Show error message
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error saving ingredient: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+            SnackBar(
+              content: Text('Error saving ingredient: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }

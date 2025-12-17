@@ -6,7 +6,7 @@ class ShoppingListRepository extends FirebaseRepository<ShoppingList> {
   ShoppingListRepository()
       : super(
           collectionName: FirestoreCollections.shoppingLists,
-          fromFirestore: (data, id) => ShoppingList.fromFirestore(data, id: id),
-          toFirestore: (list) => list.toMap(),
+          fromMap: (data) => ShoppingList.fromJson(data),
+          toMap: (list) => list.toMap(),
         );
 }

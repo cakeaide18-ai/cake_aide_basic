@@ -534,7 +534,7 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
     }
   }
 
-  void _saveOrder() {
+  void _saveOrder() async {
     if (_formKey.currentState!.validate()) {
       // Convert newly picked images to base64 strings; existing refs are preserved
       final newImageRefs = <String>[];

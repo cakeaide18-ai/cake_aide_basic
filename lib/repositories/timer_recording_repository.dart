@@ -6,8 +6,8 @@ class TimerRecordingRepository extends FirebaseRepository<TimerRecording> {
   TimerRecordingRepository()
       : super(
           collectionName: FirestoreCollections.timerRecordings,
-          fromFirestore: (data, id) => TimerRecording.fromFirestore(data, id: id),
-          toFirestore: (recording) => recording.toMap(),
+          fromMap: (data) => TimerRecording.fromJson(data),
+          toMap: (recording) => recording.toMap(),
         );
 
   /// Get timer recordings ordered by start time (most recent first)

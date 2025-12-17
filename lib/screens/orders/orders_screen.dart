@@ -460,7 +460,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 status: selectedStatus,
                 updatedAt: DateTime.now(),
               );
-              _dataService.updateOrderById(order.id, updatedOrder);
+              _repository.update(order.id, updatedOrder);
               setState(() {});
               Navigator.pop(context);
             },
