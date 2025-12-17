@@ -55,18 +55,45 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _loginWithGoogle() async {
-    final user = await AuthService.signInWithGoogle();
-    if (!mounted) return;
-    
-    if (user != null) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const MainNavigation()),
-      );
-    } else {
-      final message = AuthService.lastAuthErrorMessage ?? 'Google sign-in failed. Please try again.';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+    try {
+      debugPrint('LoginScreen: Starting Google Sign In');
+      final user = await AuthService.signInWithGoogle();
+      debugPrint('LoginScreen: Google Sign In completed, user: ${user?.uid}');
+      
+      if (!mounted) {
+        debugPrint('LoginScreen: Widget not mounted, skipping navigation');
+        return;
+      }
+      
+      if (user != null) {
+        debugPrint('LoginScreen: Navigating to MainNavigation');
+        try {
+          await Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const MainNavigation()),
+          );
+          debugPrint('LoginScreen: Navigation completed successfully');
+        } catch (e, st) {
+          debugPrint('LoginScreen: Navigation failed: $e\n$st');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Navigation error: $e')),
+            );
+          }
+        }
+      } else {
+        final message = AuthService.lastAuthErrorMessage ?? 'Google sign-in failed. Please try again.';
+        debugPrint('LoginScreen: Google Sign In failed: $message');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      }
+    } catch (e, st) {
+      debugPrint('LoginScreen: Google Sign In error: $e\n$st');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Sign in error: $e')),
+        );
+      }
     }
   }
 
