@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cake_aide_basic/widgets/ingredient_icon.dart';
 import 'package:cake_aide_basic/models/ingredient.dart';
-import 'package:cake_aide_basic/services/data_service.dart';
+import 'package:cake_aide_basic/repositories/ingredient_repository.dart';
 import 'package:cake_aide_basic/services/settings_service.dart';
 
 class AddIngredientScreen extends StatefulWidget {
@@ -35,7 +35,7 @@ class _AddIngredientScreenState extends State<AddIngredientScreen> {
     'teaspoons',
   ];
 
-  final DataService _dataService = DataService();
+  final IngredientRepository _repository = IngredientRepository();
   final SettingsService _settingsService = SettingsService();
   bool get isEditing => widget.ingredient != null;
 
@@ -67,11 +67,11 @@ class _AddIngredientScreenState extends State<AddIngredientScreen> {
     super.dispose();
   }
 
-  void _saveIngredient() {
+  void _saveIngredient() async {
     if (_formKey.currentState!.validate()) {
       try {
         final ingredient = Ingredient(
-          id: isEditing ? widget.ingredient!.id : _dataService.generateId(),
+          id: isEditing ? widget.ingredient!.id : '', // Repository will generate ID
           name: _nameController.text.trim(),
           brand: _brandController.text.trim(),
           price: double.parse(_priceController.text.trim()),
@@ -81,23 +81,27 @@ class _AddIngredientScreenState extends State<AddIngredientScreen> {
         );
 
         if (isEditing) {
-          _dataService.updateIngredient(ingredient.id, ingredient);
+          await _repository.update(ingredient);
         } else {
-          _dataService.addIngredient(ingredient);
+          await _repository.add(ingredient);
         }
         
-        Navigator.pop(context, true);
-        
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(isEditing ? 'Ingredient updated successfully!' : 'Ingredient added successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        if (context.mounted) {
+          Navigator.pop(context, true);
+          
+          // Show success message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(isEditing ? 'Ingredient updated successfully!' : 'Ingredient added successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
       } catch (e) {
+        debugPrint('Error saving ingredient: $e');
         // Show error message
-        ScaffoldMessenger.of(context).showSnackBar(
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error saving ingredient: ${e.toString()}'),
             backgroundColor: Colors.red,

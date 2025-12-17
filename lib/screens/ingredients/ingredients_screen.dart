@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cake_aide_basic/models/ingredient.dart';
-import 'package:cake_aide_basic/services/data_service.dart';
+import 'package:cake_aide_basic/repositories/ingredient_repository.dart';
 import 'package:cake_aide_basic/screens/ingredients/add_ingredient_screen.dart';
 import 'package:cake_aide_basic/theme.dart';
 import 'package:cake_aide_basic/widgets/ingredient_icon.dart';
@@ -13,23 +13,54 @@ class IngredientsScreen extends StatefulWidget {
 }
 
 class _IngredientsScreenState extends State<IngredientsScreen> {
-  final DataService _dataService = DataService();
+  final IngredientRepository _repository = IngredientRepository();
 
   @override
   Widget build(BuildContext context) {
-    final ingredients = _dataService.ingredients;
+    // Use StreamBuilder to automatically update when data changes
+    return StreamBuilder<List<Ingredient>>(
+      stream: _repository.getStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            appBar: _buildAppBar(context),
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
 
+        if (snapshot.hasError) {
+          return Scaffold(
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            appBar: _buildAppBar(context),
+            body: Center(
+              child: Text('Error loading ingredients: ${snapshot.error}'),
+            ),
+          );
+        }
+
+        final ingredients = snapshot.data ?? [];
+        return _buildScaffold(context, ingredients);
+      },
+    );
+  }
+
+  AppBar _buildAppBar(BuildContext context) {
+    return AppBar(
+      title: const Text('Ingredients'),
+      flexibleSpace: Container(
+        decoration: BoxDecoration(
+          gradient: GradientDecorations.primaryGradient,
+        ),
+      ),
+      foregroundColor: Colors.white,
+    );
+  }
+
+  Widget _buildScaffold(BuildContext context, List<Ingredient> ingredients) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
-      appBar: AppBar(
-        title: const Text('Ingredients'),
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: GradientDecorations.primaryGradient,
-          ),
-        ),
-        foregroundColor: Colors.white,
-      ),
+      appBar: _buildAppBar(context),
       body: ingredients.isEmpty
           ? _buildEmptyState()
           : ListView.builder(
@@ -229,10 +260,23 @@ class _IngredientsScreenState extends State<IngredientsScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              _dataService.deleteIngredient(ingredient.id);
-              setState(() {});
-              Navigator.pop(context);
+            onPressed: () async {
+              try {
+                await _repository.delete(ingredient.id);
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('${ingredient.name} deleted')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error deleting ingredient: $e')),
+                  );
+                }
+              }
             },
             child: const Text('Delete'),
           ),
