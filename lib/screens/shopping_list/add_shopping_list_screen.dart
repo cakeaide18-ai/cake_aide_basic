@@ -268,6 +268,10 @@ class _AddShoppingListScreenState extends State<AddShoppingListScreen> {
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                         ),
+                        onChanged: (value) {
+                          // Trigger rebuild when quantity changes
+                          setState(() {});
+                        },
                       ),
                     ),
                   ),
@@ -285,6 +289,7 @@ class _AddShoppingListScreenState extends State<AddShoppingListScreen> {
                           contentPadding: EdgeInsets.all(16),
                         ),
                         hint: const Text('Select Recipe...'),
+                        value: _selectedRecipe,
                         items: _availableRecipes.map((recipe) {
                           return DropdownMenuItem(
                             value: recipe,
@@ -316,33 +321,31 @@ class _AddShoppingListScreenState extends State<AddShoppingListScreen> {
                       ),
                     ),
                   ),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              // Add Recipe Button
-              if (_selectedRecipe != null && _recipeQuantityController.text.isNotEmpty)
-                Center(
-                  child: Container(
+                  const SizedBox(width: 8),
+                  // Add Recipe Button - always visible, disabled when conditions not met
+                  Container(
                     decoration: BoxDecoration(
-                      gradient: GradientDecorations.primaryGradient,
+                      gradient: (_selectedRecipe != null && _recipeQuantityController.text.isNotEmpty)
+                          ? GradientDecorations.primaryGradient
+                          : null,
+                      color: (_selectedRecipe == null || _recipeQuantityController.text.isEmpty)
+                          ? Colors.grey.shade300
+                          : null,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: ElevatedButton(
-                      onPressed: _addRecipe,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        foregroundColor: Colors.white,
-                        shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: const Text('Add Recipe'),
+                    child: IconButton(
+                      onPressed: (_selectedRecipe != null && _recipeQuantityController.text.isNotEmpty)
+                          ? _addRecipe
+                          : null,
+                      icon: const Icon(Icons.add),
+                      color: (_selectedRecipe != null && _recipeQuantityController.text.isNotEmpty)
+                          ? Colors.white
+                          : Colors.grey.shade500,
+                      tooltip: 'Add Recipe',
                     ),
                   ),
-                ),
+                ],
+              ),
 
               const SizedBox(height: 16),
 
@@ -409,6 +412,10 @@ class _AddShoppingListScreenState extends State<AddShoppingListScreen> {
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                         ),
+                        onChanged: (value) {
+                          // Trigger rebuild when quantity changes
+                          setState(() {});
+                        },
                       ),
                     ),
                   ),
@@ -426,6 +433,7 @@ class _AddShoppingListScreenState extends State<AddShoppingListScreen> {
                           contentPadding: EdgeInsets.all(16),
                         ),
                         hint: const Text('Select Supply...'),
+                        value: _selectedSupply,
                         items: _availableSupplies.map((supply) {
                           return DropdownMenuItem(
                             value: supply,
@@ -440,33 +448,31 @@ class _AddShoppingListScreenState extends State<AddShoppingListScreen> {
                       ),
                     ),
                   ),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              // Add Supply Button
-              if (_selectedSupply != null && _supplyQuantityController.text.isNotEmpty)
-                Center(
-                  child: Container(
+                  const SizedBox(width: 8),
+                  // Add Supply Button - always visible, disabled when conditions not met
+                  Container(
                     decoration: BoxDecoration(
-                      gradient: GradientDecorations.primaryGradient,
+                      gradient: (_selectedSupply != null && _supplyQuantityController.text.isNotEmpty)
+                          ? GradientDecorations.primaryGradient
+                          : null,
+                      color: (_selectedSupply == null || _supplyQuantityController.text.isEmpty)
+                          ? Colors.grey.shade300
+                          : null,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: ElevatedButton(
-                      onPressed: _addSupply,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        foregroundColor: Colors.white,
-                        shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: const Text('Add Supply'),
+                    child: IconButton(
+                      onPressed: (_selectedSupply != null && _supplyQuantityController.text.isNotEmpty)
+                          ? _addSupply
+                          : null,
+                      icon: const Icon(Icons.add),
+                      color: (_selectedSupply != null && _supplyQuantityController.text.isNotEmpty)
+                          ? Colors.white
+                          : Colors.grey.shade500,
+                      tooltip: 'Add Supply',
                     ),
                   ),
-                ),
+                ],
+              ),
 
               const SizedBox(height: 16),
 
@@ -533,6 +539,10 @@ class _AddShoppingListScreenState extends State<AddShoppingListScreen> {
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                         ),
+                        onChanged: (value) {
+                          // Trigger rebuild when quantity changes
+                          setState(() {});
+                        },
                       ),
                     ),
                   ),
@@ -551,6 +561,7 @@ class _AddShoppingListScreenState extends State<AddShoppingListScreen> {
                           contentPadding: EdgeInsets.all(16),
                         ),
                         hint: const Text('Select Ingredient...'),
+                        value: _selectedIngredient,
                         items: _availableIngredients.map((ingredient) {
                           return DropdownMenuItem(
                             value: ingredient,
@@ -582,33 +593,31 @@ class _AddShoppingListScreenState extends State<AddShoppingListScreen> {
                       ),
                     ),
                   ),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              // Add Ingredient Button
-              if (_selectedIngredient != null && _ingredientQuantityController.text.isNotEmpty)
-                Center(
-                  child: Container(
+                  const SizedBox(width: 8),
+                  // Add Ingredient Button - always visible, disabled when conditions not met
+                  Container(
                     decoration: BoxDecoration(
-                      gradient: GradientDecorations.primaryGradient,
+                      gradient: (_selectedIngredient != null && _ingredientQuantityController.text.isNotEmpty)
+                          ? GradientDecorations.primaryGradient
+                          : null,
+                      color: (_selectedIngredient == null || _ingredientQuantityController.text.isEmpty)
+                          ? Colors.grey.shade300
+                          : null,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: ElevatedButton(
-                      onPressed: _addIngredient,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        foregroundColor: Colors.white,
-                        shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: const Text('Add Ingredient'),
+                    child: IconButton(
+                      onPressed: (_selectedIngredient != null && _ingredientQuantityController.text.isNotEmpty)
+                          ? _addIngredient
+                          : null,
+                      icon: const Icon(Icons.add),
+                      color: (_selectedIngredient != null && _ingredientQuantityController.text.isNotEmpty)
+                          ? Colors.white
+                          : Colors.grey.shade500,
+                      tooltip: 'Add Ingredient',
                     ),
                   ),
-                ),
+                ],
+              ),
 
               const SizedBox(height: 16),
 
