@@ -101,41 +101,46 @@ class _UnitConverterScreenState extends State<UnitConverterScreen> {
         ),
         foregroundColor: Colors.white,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                children: [
-                  UnitConverterIcon(size: 48),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Unit Converter',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onSurface,
+      body: GestureDetector(
+        onTap: () {
+          // Dismiss keyboard when tapping outside the text field
+          FocusScope.of(context).unfocus();
+        },
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    UnitConverterIcon(size: 48),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Unit Converter',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Convert between different baking units with ingredient-specific accuracy',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Convert between different baking units with ingredient-specific accuracy',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
 
-            const SizedBox(height: 32),
+              const SizedBox(height: 32),
 
             // Ingredient Selection (only show if converting to/from cups)
             if (_fromUnit == 'cups' || _toUnit == 'cups') ...[
@@ -444,8 +449,9 @@ class _UnitConverterScreenState extends State<UnitConverterScreen> {
                 ),
             ],
 
-            const Spacer(),
-          ],
+            const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
     );
