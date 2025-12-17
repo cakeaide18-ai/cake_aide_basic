@@ -168,6 +168,9 @@ class ShoppingList {
   final List<ShoppingListRecipe> recipes;
   final List<ShoppingListSupply> supplies;
   final List<ShoppingListIngredient> ingredients;
+  // Map to store checkbox state of calculated ingredients from recipes
+  // Key format: "ingredientId_unit" (e.g., "ing123_cups")
+  final Map<String, bool> calculatedIngredientChecks;
 
   const ShoppingList({
     required this.id,
@@ -175,6 +178,7 @@ class ShoppingList {
     this.recipes = const [],
     this.supplies = const [],
     this.ingredients = const [],
+    this.calculatedIngredientChecks = const {},
   });
 
   ShoppingList copyWith({
@@ -183,6 +187,7 @@ class ShoppingList {
     List<ShoppingListRecipe>? recipes,
     List<ShoppingListSupply>? supplies,
     List<ShoppingListIngredient>? ingredients,
+    Map<String, bool>? calculatedIngredientChecks,
   }) {
     return ShoppingList(
       id: id ?? this.id,
@@ -190,6 +195,7 @@ class ShoppingList {
       recipes: recipes ?? this.recipes,
       supplies: supplies ?? this.supplies,
       ingredients: ingredients ?? this.ingredients,
+      calculatedIngredientChecks: calculatedIngredientChecks ?? this.calculatedIngredientChecks,
     );
   }
 
@@ -199,6 +205,7 @@ class ShoppingList {
         'recipes': recipes.map((e) => e.toMap()).toList(),
         'supplies': supplies.map((e) => e.toMap()).toList(),
         'ingredients': ingredients.map((e) => e.toMap()).toList(),
+        'calculatedIngredientChecks': calculatedIngredientChecks,
       };
 
   Map<String, dynamic> toJson() => toMap();
@@ -215,6 +222,7 @@ class ShoppingList {
         ingredients: (json['ingredients'] as List? ?? [])
             .map((e) => ShoppingListIngredient.fromJson(e))
             .toList(),
+        calculatedIngredientChecks: Map<String, bool>.from(json['calculatedIngredientChecks'] ?? {}),
       );
 
   factory ShoppingList.fromFirestore(Map<String, dynamic> map, {String? id}) {
@@ -233,7 +241,8 @@ class ShoppingList {
             other.name == name &&
             const ListEquality().equals(other.recipes, recipes) &&
             const ListEquality().equals(other.supplies, supplies) &&
-            const ListEquality().equals(other.ingredients, ingredients));
+            const ListEquality().equals(other.ingredients, ingredients) &&
+            const MapEquality().equals(other.calculatedIngredientChecks, calculatedIngredientChecks));
   }
 
   @override
@@ -243,6 +252,7 @@ class ShoppingList {
         const ListEquality().hash(recipes),
         const ListEquality().hash(supplies),
         const ListEquality().hash(ingredients),
+        const MapEquality().hash(calculatedIngredientChecks),
       );
 
   @override

@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:cake_aide_basic/services/data_service.dart';
 import 'package:cake_aide_basic/models/shopping_list.dart';
-
-
 import 'package:cake_aide_basic/models/ingredient.dart';
 import 'package:cake_aide_basic/screens/shopping_list/add_shopping_list_screen.dart';
+import 'package:cake_aide_basic/repositories/shopping_list_repository.dart';
 import 'package:cake_aide_basic/theme.dart';
 
 // Helper class for calculated ingredients
@@ -35,7 +33,7 @@ class ShoppingListDetailsScreen extends StatefulWidget {
 }
 
 class _ShoppingListDetailsScreenState extends State<ShoppingListDetailsScreen> {
-  final DataService _dataService = DataService();
+  final ShoppingListRepository _repository = ShoppingListRepository();
   late ShoppingList _currentShoppingList;
 
   @override
@@ -62,15 +60,28 @@ class _ShoppingListDetailsScreenState extends State<ShoppingListDetailsScreen> {
     _updateShoppingList(ingredients: updatedIngredients);
   }
 
+  void _toggleCalculatedIngredientCheck(int index) {
+    final calculatedIngredients = _calculatedIngredients;
+    final item = calculatedIngredients[index];
+    final key = '${item.ingredient.id}_${item.unit}';
+    
+    final updatedChecks = Map<String, bool>.from(_currentShoppingList.calculatedIngredientChecks);
+    updatedChecks[key] = !(updatedChecks[key] ?? false);
+    
+    _updateShoppingList(calculatedIngredientChecks: updatedChecks);
+  }
+
   void _updateShoppingList({
     List<ShoppingListSupply>? supplies,
     List<ShoppingListIngredient>? ingredients,
+    Map<String, bool>? calculatedIngredientChecks,
   }) {
     final updatedShoppingList = _currentShoppingList.copyWith(
       supplies: supplies,
       ingredients: ingredients,
+      calculatedIngredientChecks: calculatedIngredientChecks,
     );
-    _dataService.updateShoppingList(updatedShoppingList.id, updatedShoppingList);
+    _repository.update(updatedShoppingList.id, updatedShoppingList);
     setState(() {
       _currentShoppingList = updatedShoppingList;
     });
@@ -94,12 +105,12 @@ class _ShoppingListDetailsScreenState extends State<ShoppingListDetailsScreen> {
             isChecked: ingredientMap[key]!.isChecked,
           );
         } else {
-          // Create new entry
+          // Create new entry with persisted checkbox state
           ingredientMap[key] = CalculatedIngredient(
             ingredient: recipeIngredient.ingredient,
             totalQuantity: calculatedQuantity,
             unit: recipeIngredient.unit,
-            isChecked: false,
+            isChecked: _currentShoppingList.calculatedIngredientChecks[key] ?? false,
           );
         }
       }
@@ -143,14 +154,13 @@ class _ShoppingListDetailsScreenState extends State<ShoppingListDetailsScreen> {
                   ),
                 ),
               );
-              // Refresh the shopping list from data service
-              final updatedList = _dataService.shoppingLists.firstWhere(
-                (list) => list.id == _currentShoppingList.id,
-                orElse: () => _currentShoppingList,
-              );
-              setState(() {
-                _currentShoppingList = updatedList;
-              });
+              // Refresh the shopping list from repository
+              final updatedList = await _repository.getById(_currentShoppingList.id);
+              if (updatedList != null) {
+                setState(() {
+                  _currentShoppingList = updatedList;
+                });
+              }
             },
           ),
           IconButton(
@@ -306,9 +316,7 @@ class _ShoppingListDetailsScreenState extends State<ShoppingListDetailsScreen> {
                               contentPadding: const EdgeInsets.all(16),
                               leading: GestureDetector(
                                 onTap: () {
-                                  setState(() {
-                                    _calculatedIngredients[index].isChecked = !_calculatedIngredients[index].isChecked;
-                                  });
+                                  _toggleCalculatedIngredientCheck(index);
                                 },
                                 child: Container(
                                   width: 24,
