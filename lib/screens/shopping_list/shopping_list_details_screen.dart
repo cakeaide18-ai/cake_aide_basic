@@ -4,6 +4,7 @@ import 'package:cake_aide_basic/models/ingredient.dart';
 import 'package:cake_aide_basic/screens/shopping_list/add_shopping_list_screen.dart';
 import 'package:cake_aide_basic/repositories/shopping_list_repository.dart';
 import 'package:cake_aide_basic/theme.dart';
+import 'package:share_plus/share_plus.dart';
 
 // Helper class for calculated ingredients
 class CalculatedIngredient {
@@ -87,6 +88,48 @@ class _ShoppingListDetailsScreenState extends State<ShoppingListDetailsScreen> {
     });
   }
 
+  void _shareShoppingList() {
+    final buffer = StringBuffer();
+    buffer.writeln('📋 ${_currentShoppingList.name}');
+    buffer.writeln('');
+    
+    // Add calculated ingredients from recipes
+    final calculatedIngredients = _calculatedIngredients;
+    if (calculatedIngredients.isNotEmpty) {
+      buffer.writeln('🍰 Ingredients from Recipes:');
+      for (final item in calculatedIngredients) {
+        final checkmark = item.isChecked ? '✓' : '○';
+        buffer.writeln('$checkmark ${item.ingredient.name} (${item.ingredient.brand}) - ${item.totalQuantity.toStringAsFixed(1)} ${item.unit}');
+      }
+      buffer.writeln('');
+    }
+    
+    // Add supplies
+    if (_currentShoppingList.supplies.isNotEmpty) {
+      buffer.writeln('🛠️ Supplies:');
+      for (final item in _currentShoppingList.supplies) {
+        final checkmark = item.isChecked ? '✓' : '○';
+        buffer.writeln('$checkmark ${item.supply.name} (${item.supply.brand}) - ${item.quantity.toStringAsFixed(1)} ${item.supply.unit}');
+      }
+      buffer.writeln('');
+    }
+    
+    // Add additional ingredients
+    if (_currentShoppingList.ingredients.isNotEmpty) {
+      buffer.writeln('🥄 Additional Ingredients:');
+      for (final item in _currentShoppingList.ingredients) {
+        final checkmark = item.isChecked ? '✓' : '○';
+        buffer.writeln('$checkmark ${item.ingredient.name} (${item.ingredient.brand}) - ${item.quantity.toStringAsFixed(1)} ${item.ingredient.unit}');
+      }
+      buffer.writeln('');
+    }
+    
+    // Add progress summary
+    buffer.writeln('Progress: $_checkedItems of $_totalItems items completed');
+    
+    Share.share(buffer.toString(), subject: _currentShoppingList.name);
+  }
+
   List<CalculatedIngredient> get _calculatedIngredients {
     final Map<String, CalculatedIngredient> ingredientMap = {};
     
@@ -165,7 +208,7 @@ class _ShoppingListDetailsScreenState extends State<ShoppingListDetailsScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.share),
-            onPressed: () {},
+            onPressed: _shareShoppingList,
           ),
         ],
       ),
