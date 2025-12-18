@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:cake_aide_basic/firestore/firestore_data_schema.dart';
 
 /// Base repository class for Firebase Firestore operations
@@ -24,8 +25,13 @@ abstract class FirebaseRepository<T> {
     try {
       // Avoid accessing FirebaseAuth when Firebase is not initialized (tests)
       if (Firebase.apps.isEmpty) return null;
-      return _auth.currentUser?.uid;
-    } catch (_) {
+      final uid = _auth.currentUser?.uid;
+      if (uid == null) {
+        debugPrint('FirebaseRepository: currentUser is null in $collectionName');
+      }
+      return uid;
+    } catch (e) {
+      debugPrint('FirebaseRepository: Error getting currentUserId: $e');
       return null;
     }
   }
@@ -36,14 +42,24 @@ abstract class FirebaseRepository<T> {
   
   /// Add a new document
   Future<String> add(T item) async {
-    if (currentUserId == null) throw Exception('User not authenticated');
+    debugPrint('FirebaseRepository.add: Checking auth for $collectionName');
+    debugPrint('FirebaseRepository.add: Firebase apps count: ${Firebase.apps.length}');
+    debugPrint('FirebaseRepository.add: currentUser: ${_auth.currentUser}');
+    debugPrint('FirebaseRepository.add: currentUserId: $currentUserId');
     
+    if (currentUserId == null) {
+      debugPrint('FirebaseRepository.add: ❌ User not authenticated - throwing exception');
+      throw Exception('User not authenticated');
+    }
+    
+    debugPrint('FirebaseRepository.add: ✅ User authenticated, proceeding with add');
     final data = toMap(item);
     data[FirestoreFields.ownerId] = currentUserId;
     data[FirestoreFields.createdAt] = FieldValue.serverTimestamp();
     data[FirestoreFields.updatedAt] = FieldValue.serverTimestamp();
     
     final docRef = await collection.add(data);
+    debugPrint('FirebaseRepository.add: ✅ Document added with ID: ${docRef.id}');
     return docRef.id;
   }
   
