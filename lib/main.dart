@@ -17,6 +17,7 @@ import 'package:background_fetch/background_fetch.dart';
 import 'package:cake_aide_basic/services/theme_controller.dart';
 import 'package:cake_aide_basic/services/remote_logger.dart';
 import 'package:cake_aide_basic/services/auth_service.dart';
+import 'package:cake_aide_basic/services/settings_service.dart';
 
 Future<void> main() async {
   // Ensure Flutter is ready ASAP and show UI immediately.
@@ -229,6 +230,16 @@ Future<void> _preInitialize() async {
       });
     } catch (e) {
       debugPrint('ThemeController load error: $e');
+    }
+
+    try {
+      await SettingsService().loadSettings()
+          .timeout(const Duration(seconds: 2), onTimeout: () {
+        debugPrint('SettingsService load timed out; using defaults');
+        return;
+      });
+    } catch (e) {
+      debugPrint('SettingsService load error: $e');
     }
 
     try {

@@ -47,7 +47,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       text: _settingsService.pricePerHour.toStringAsFixed(2)
     );
     _filteredCurrencies = List.from(_currencies);
+    _loadSettings();
     _loadProfileData();
+  }
+
+  Future<void> _loadSettings() async {
+    await _settingsService.loadSettings();
+    setState(() {
+      _pricePerHourController.text = _settingsService.pricePerHour.toStringAsFixed(2);
+    });
   }
 
   Future<void> _loadProfileData() async {
@@ -551,8 +559,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       size: 20,
                                     )
                                   : null,
-                              onTap: () {
-                                _settingsService.setCurrency(currency['code']!);
+                              onTap: () async {
+                                await _settingsService.setCurrency(currency['code']!);
                                 setState(() {});
                                 Navigator.pop(context);
                               },
@@ -601,10 +609,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               if (tempController.text.isNotEmpty) {
                 final price = double.tryParse(tempController.text) ?? 25.0;
-                _settingsService.setPricePerHour(price);
+                await _settingsService.setPricePerHour(price);
                 _pricePerHourController.text = tempController.text;
                 setState(() {});
               }
@@ -835,28 +843,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 title: 'Push Notifications',
                 subtitle: 'Receive app notifications',
                 value: _settingsService.pushNotifications,
-                onChanged: (value) => setState(() => _settingsService.setPushNotifications(value)),
+                onChanged: (value) async {
+                  await _settingsService.setPushNotifications(value);
+                  setState(() {});
+                },
               ),
               _buildNotificationTile(
                 icon: Icons.email,
                 title: 'Email Notifications',
                 subtitle: 'Receive notifications via email',
                 value: _settingsService.emailNotifications,
-                onChanged: (value) => setState(() => _settingsService.setEmailNotifications(value)),
+                onChanged: (value) async {
+                  await _settingsService.setEmailNotifications(value);
+                  setState(() {});
+                },
               ),
               _buildNotificationTile(
                 icon: Icons.event_available,
                 title: 'Order Updates',
                 subtitle: 'Notify you when an order is due',
                 value: _settingsService.orderUpdates,
-                onChanged: (value) => setState(() => _settingsService.setOrderUpdates(value)),
+                onChanged: (value) async {
+                  await _settingsService.setOrderUpdates(value);
+                  setState(() {});
+                },
               ),
               _buildNotificationTile(
                 icon: Icons.campaign,
                 title: 'Marketing',
                 subtitle: 'Promotional offers and news',
                 value: _settingsService.marketing,
-                onChanged: (value) => setState(() => _settingsService.setMarketing(value)),
+                onChanged: (value) async {
+                  await _settingsService.setMarketing(value);
+                  setState(() {});
+                },
               ),
             ]),
             

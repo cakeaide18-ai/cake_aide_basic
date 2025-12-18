@@ -1,3 +1,6 @@
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
+
 class SettingsService {
   static final SettingsService _instance = SettingsService._internal();
   factory SettingsService() => _instance;
@@ -13,6 +16,9 @@ class SettingsService {
   bool _orderUpdates = true;
   bool _marketing = false;
 
+  // Track if settings have been loaded
+  bool _initialized = false;
+
   // Getters
   String get currency => _currency;
   double get pricePerHour => _pricePerHour;
@@ -21,29 +27,63 @@ class SettingsService {
   bool get orderUpdates => _orderUpdates;
   bool get marketing => _marketing;
 
-  // Setters
-  void setCurrency(String currency) {
+  /// Load settings from SharedPreferences
+  Future<void> loadSettings() async {
+    if (_initialized) return; // Only load once
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _currency = prefs.getString('settings_currency') ?? 'USD';
+      _pricePerHour = prefs.getDouble('settings_price_per_hour') ?? 25.0;
+      _pushNotifications = prefs.getBool('settings_push_notifications') ?? true;
+      _emailNotifications = prefs.getBool('settings_email_notifications') ?? false;
+      _orderUpdates = prefs.getBool('settings_order_updates') ?? true;
+      _marketing = prefs.getBool('settings_marketing') ?? false;
+      
+      _initialized = true;
+      debugPrint('SettingsService: Loaded settings - Currency: $_currency, Price/hr: $_pricePerHour');
+    } catch (e) {
+      debugPrint('SettingsService: Error loading settings: $e');
+    }
+  }
+
+  // Setters with persistence
+  Future<void> setCurrency(String currency) async {
     _currency = currency;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('settings_currency', currency);
+    debugPrint('SettingsService: Saved currency: $currency');
   }
 
-  void setPricePerHour(double price) {
+  Future<void> setPricePerHour(double price) async {
     _pricePerHour = price;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('settings_price_per_hour', price);
+    debugPrint('SettingsService: Saved price per hour: $price');
   }
 
-  void setPushNotifications(bool value) {
+  Future<void> setPushNotifications(bool value) async {
     _pushNotifications = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('settings_push_notifications', value);
   }
 
-  void setEmailNotifications(bool value) {
+  Future<void> setEmailNotifications(bool value) async {
     _emailNotifications = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('settings_email_notifications', value);
   }
 
-  void setOrderUpdates(bool value) {
+  Future<void> setOrderUpdates(bool value) async {
     _orderUpdates = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('settings_order_updates', value);
   }
 
-  void setMarketing(bool value) {
+  Future<void> setMarketing(bool value) async {
     _marketing = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('settings_marketing', value);
   }
 
   // Currency symbol helper
