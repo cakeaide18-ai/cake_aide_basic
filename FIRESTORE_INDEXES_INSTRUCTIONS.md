@@ -2,20 +2,27 @@
 
 ## Issue Summary
 After testing build 20, the following features are showing Firestore index errors:
-- ✅ Ingredients (already fixed)
-- ✅ Supplies (already fixed)  
-- ✅ Recipes (already fixed)
-- ✅ Orders (already fixed)
-- ❌ **Timer Recordings** (needs fix)
+- ✅ Ingredients (index defined, needs manual creation)
+- ✅ Supplies (index defined, needs manual creation)
+- ✅ Recipes (index defined, needs manual creation)
+- ✅ Orders (index defined, needs manual creation)
+- ✅ Quotes (index defined, needs manual creation)
+- ✅ Shopping Lists (index defined, needs manual creation)
+- ❌ **Timer Recordings** (index defined, needs manual creation)
 
 ## Root Cause
-The `firestore.indexes.json` had incorrect field name for timer_recordings. It referenced `date` but the actual query uses `startTime`.
+The indexes are all defined correctly in `firestore.indexes.json`, but they haven't been manually created in Firebase Console yet. Firestore requires you to explicitly create composite indexes before queries using multiple fields can work.
 
 ## Solution Applied
-Updated `firestore.indexes.json` to add the correct composite indexes for timer_recordings:
-
-1. **Index 1**: `owner_id` (ASC) + `startTime` (DESC) - for getting recent recordings
-2. **Index 2**: `owner_id` (ASC) + `created_at` (DESC) - for base queries
+Updated `firestore.indexes.json` with all necessary composite indexes:
+- ingredients: `owner_id` + `created_at`
+- supplies: `owner_id` + `created_at`
+- recipes: `owner_id` + `created_at`
+- orders: `owner_id` + `created_at`
+- quotes: `owner_id` + `created_at`
+- shopping_lists: `owner_id` + `created_at` (NEWLY ADDED)
+- timer_recordings: `owner_id` + `startTime` (FIXED)
+- timer_recordings: `owner_id` + `created_at` (NEWLY ADDED)
 
 ## Manual Steps Required
 
@@ -59,18 +66,32 @@ After creating the indexes:
    - ✅ supplies (owner_id + created_at)
    - ✅ recipes (owner_id + created_at)
    - ✅ orders (owner_id + created_at)
-   - ⏳ timer_recordings (owner_id + startTime) - **NEW**
+   - ✅ quotes (owner_id + created_at)
+   - ⏳ shopping_lists (owner_id + created_at) - **NEW**
+   - ⏳ timer_recordings (owner_id + startTime) - **FIXED**
    - ⏳ timer_recordings (owner_id + created_at) - **NEW**
+
+You said earlier that you manually created ingredients, supplies, orders indexes. Those should already be "Enabled". You still need to create:
+- quotes (owner_id + created_at)
+- shopping_lists (owner_id + created_at) 
+- timer_recordings (owner_id + startTime)
+- timer_recordings (owner_id + created_at)
 
 ## Expected Result
 After indexes are created and enabled:
-- Timer recordings will save successfully
-- All data features (ingredients, supplies, recipes, orders, timer) will work without errors
+- **Ingredients** will load and save successfully
+- **Supplies** will load and save successfully
+- **Recipes** will load and save successfully
+- **Orders** will load and save successfully
+- **Quotes** will load and save successfully
+- **Shopping Lists** will load and save successfully
+- **Timer recordings** will load and save successfully
 - No more "[cloud_firestore/failed-precondition] The query requires an index" errors
 
 ## Files Changed
-- ✅ `firestore.indexes.json` - Updated with correct timer_recordings indexes
+- ✅ `firestore.indexes.json` - Added shopping_lists index, fixed timer_recordings indexes
 - ✅ `lib/screens/reminders/reminders_screen.dart` - Added empty state
+- ✅ `lib/screens/orders/add_order_screen.dart` - Fixed duplicate save bug (added save guard)
 
 ## Next Build
 After manually creating the indexes, they will persist. No need to recreate them for future builds.

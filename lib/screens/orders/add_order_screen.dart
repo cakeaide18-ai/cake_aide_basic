@@ -18,6 +18,9 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
   final _formKey = GlobalKey<FormState>();
   final OrderRepository _repository = OrderRepository();
   final SettingsService _settingsService = SettingsService();
+  
+  // Prevent multiple saves
+  bool _isSaving = false;
 
   // Form controllers
   final _orderNameController = TextEditingController();
@@ -70,14 +73,23 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
         title: const Text('Add New Order'),
         actions: [
           TextButton(
-            onPressed: _saveOrder,
-            child: const Text(
-              'SAVE',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            onPressed: _isSaving ? null : _saveOrder,
+            child: _isSaving
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Text(
+                    'SAVE',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
           ),
         ],
       ),
@@ -467,6 +479,9 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
   }
 
   void _saveOrder() async {
+    // Prevent multiple saves
+    if (_isSaving) return;
+    
     if (_formKey.currentState!.validate()) {
       if (_deliveryDate == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -478,47 +493,65 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
         return;
       }
 
-      // Convert picked images to base64 strings for persistence in the order model
-      final List<String> imageRefs = [];
-      final files = _cakeImages ?? const <PlatformFile>[];
-      for (final f in files) {
-        if (f.bytes != null) {
-          final b64 = base64Encode(f.bytes!);
-          imageRefs.add(b64);
+      setState(() {
+        _isSaving = true;
+      });
+
+      try {
+        // Convert picked images to base64 strings for persistence in the order model
+        final List<String> imageRefs = [];
+        final files = _cakeImages ?? const <PlatformFile>[];
+        for (final f in files) {
+          if (f.bytes != null) {
+            final b64 = base64Encode(f.bytes!);
+            imageRefs.add(b64);
+          }
         }
-      }
 
-      final order = Order(
-        id: '',
-        name: _orderNameController.text.trim(),
-        customerName: _customerNameController.text.trim(),
-        customerPhone: _customerPhoneController.text.trim(),
-        customerEmail: _customerEmailController.text.trim(),
-        status: _selectedStatus,
-        orderDate: _orderDate ?? DateTime.now(),
-        deliveryDate: _deliveryDate,
-        deliveryTime: _deliveryTime,
-        notes: _notesController.text.trim(),
-        cakeDetails: _cakeDetailsController.text.trim(),
-        servings: int.tryParse(_servingsController.text) ?? 0,
-        price: double.tryParse(_priceController.text) ?? 0.0,
-        isCustomDesign: _isCustomDesign,
-        customDesignNotes: _customDesignController.text.trim(),
-        imageUrls: imageRefs,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-
-      await _repository.add(order);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Order added successfully!'),
-            backgroundColor: Colors.green,
-          ),
+        final order = Order(
+          id: '',
+          name: _orderNameController.text.trim(),
+          customerName: _customerNameController.text.trim(),
+          customerPhone: _customerPhoneController.text.trim(),
+          customerEmail: _customerEmailController.text.trim(),
+          status: _selectedStatus,
+          orderDate: _orderDate ?? DateTime.now(),
+          deliveryDate: _deliveryDate,
+          deliveryTime: _deliveryTime,
+          notes: _notesController.text.trim(),
+          cakeDetails: _cakeDetailsController.text.trim(),
+          servings: int.tryParse(_servingsController.text) ?? 0,
+          price: double.tryParse(_priceController.text) ?? 0.0,
+          isCustomDesign: _isCustomDesign,
+          customDesignNotes: _customDesignController.text.trim(),
+          imageUrls: imageRefs,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
         );
-        Navigator.pop(context);
+
+        await _repository.add(order);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Order added successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pop(context, true);
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _isSaving = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error saving order: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
