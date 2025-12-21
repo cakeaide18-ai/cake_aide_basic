@@ -9,7 +9,7 @@ class UserProfileRepository extends FirebaseRepository<UserProfile> {
   UserProfileRepository()
       : super(
           collectionName: FirestoreCollections.userProfiles,
-          fromMap: (map, id) => UserProfile.fromMap({...map, 'id': id}),
+          fromMap: (map) => UserProfile.fromFirestore(map),
           toMap: (profile) => profile.toMap(),
         );
 
@@ -18,7 +18,8 @@ class UserProfileRepository extends FirebaseRepository<UserProfile> {
     try {
       final doc = await collection.doc(userId).get();
       if (!doc.exists) return null;
-      return fromMap(doc.data()!, doc.id);
+      // Pass document ID to fromFirestore
+      return UserProfile.fromFirestore(doc.data()!, id: doc.id);
     } catch (e) {
       throw Exception('Failed to get user profile: $e');
     }
