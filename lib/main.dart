@@ -208,16 +208,7 @@ Future<void> _preInitialize() async {
     // Don't print full stack trace to avoid cluttering console
   }
 
-  try {
-    await SupabaseConfig.initialize()
-        .timeout(const Duration(seconds: 8), onTimeout: () {
-      debugPrint('Supabase initialization timed out; continuing cautiously');
-      return;
-    });
-    debugPrint('Supabase initialized successfully (StartupGate)');
-  } catch (e) {
-    debugPrint('Supabase initialization failed (StartupGate): $e');
-  }
+  // Supabase removed - now using Firebase Firestore for all data including user profiles
 
   // Post-frame follow-ups
   WidgetsBinding.instance.addPostFrameCallback((_) async {

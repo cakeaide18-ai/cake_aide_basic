@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:cake_aide_basic/supabase/supabase_config.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:cake_aide_basic/models/user_profile.dart';
-import 'package:cake_aide_basic/supabase/cake_aide_service.dart';
+import 'package:cake_aide_basic/repositories/user_profile_repository.dart';
 
 /// Authentication state manager for CakeAide app
 /// Provides a single source of truth for authentication state
@@ -13,11 +12,12 @@ class AuthStateManager extends ChangeNotifier {
     _initialize();
   }
 
-  User? _currentUser;
+  firebase_auth.User? _currentUser;
   UserProfile? _userProfile;
   bool _isLoading = false;
+  final UserProfileRepository _profileRepo = UserProfileRepository();
 
-  User? get currentUser => _currentUser;
+  firebase_auth.User? get currentUser => _currentUser;
   UserProfile? get userProfile => _userProfile;
   bool get isAuthenticated => _currentUser != null;
   bool get isLoading => _isLoading;
@@ -25,11 +25,11 @@ class AuthStateManager extends ChangeNotifier {
   void _initialize() {
     try {
       // Set initial user
-      _currentUser = SupabaseAuth.currentUser;
+      _currentUser = firebase_auth.FirebaseAuth.instance.currentUser;
 
       // Listen to auth state changes
-      SupabaseAuth.authStateChanges.listen((AuthState data) {
-        _currentUser = data.session?.user;
+      firebase_auth.FirebaseAuth.instance.authStateChanges().listen((firebase_auth.User? user) {
+        _currentUser = user;
         
         if (_currentUser == null) {
           // User signed out, clear profile
@@ -39,11 +39,11 @@ class AuthStateManager extends ChangeNotifier {
         notifyListeners();
       });
     } catch (e) {
-      debugPrint('AuthStateManager: Supabase not initialized, skipping auth state subscription: $e');
+      debugPrint('AuthStateManager: Firebase Auth not initialized: $e');
     }
   }
 
-  /// Load user profile from database
+  /// Load user profile from Firestore
   /// Call this after successful authentication
   Future<void> loadUserProfile() async {
     if (_currentUser == null) return;
@@ -52,53 +52,9 @@ class AuthStateManager extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      _userProfile = await CakeAideService.getUserProfile(_currentUser!.id);
+      _userProfile = await _profileRepo.getByUserId(_currentUser!.uid);
     } catch (e) {
       debugPrint('Error loading user profile: $e');
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  /// Sign up with email and password
-  Future<AuthResponse> signUp({
-    required String email,
-    required String password,
-    Map<String, dynamic>? userData,
-  }) async {
-    try {
-      _isLoading = true;
-      notifyListeners();
-
-      final response = await SupabaseAuth.signUp(
-        email: email,
-        password: password,
-        userData: userData,
-      );
-
-      return response;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  /// Sign in with email and password
-  Future<AuthResponse> signIn({
-    required String email,
-    required String password,
-  }) async {
-    try {
-      _isLoading = true;
-      notifyListeners();
-
-      final response = await SupabaseAuth.signIn(
-        email: email,
-        password: password,
-      );
-
-      return response;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -111,17 +67,12 @@ class AuthStateManager extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      await SupabaseAuth.signOut();
+      await firebase_auth.FirebaseAuth.instance.signOut();
       _userProfile = null;
     } finally {
       _isLoading = false;
       notifyListeners();
     }
-  }
-
-  /// Reset password
-  Future<void> resetPassword(String email) async {
-    await SupabaseAuth.resetPassword(email);
   }
 
   /// Set user profile directly (for local updates)
@@ -132,11 +83,14 @@ class AuthStateManager extends ChangeNotifier {
 
   /// Update user profile
   Future<void> updateUserProfile(UserProfile profile) async {
+    if (_currentUser == null) return;
+    
     try {
       _isLoading = true;
       notifyListeners();
 
-      _userProfile = await CakeAideService.updateUserProfile(profile);
+      await _profileRepo.updateProfile(_currentUser!.uid, profile.toMap());
+      _userProfile = profile;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -145,11 +99,14 @@ class AuthStateManager extends ChangeNotifier {
 
   /// Create user profile
   Future<void> createUserProfile(UserProfile profile) async {
+    if (_currentUser == null) return;
+    
     try {
       _isLoading = true;
       notifyListeners();
 
-      _userProfile = await CakeAideService.createUserProfile(profile);
+      await _profileRepo.setUserProfile(_currentUser!.uid, profile);
+      _userProfile = profile;
     } finally {
       _isLoading = false;
       notifyListeners();

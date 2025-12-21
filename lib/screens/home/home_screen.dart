@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cake_aide_basic/repositories/user_profile_repository.dart';
 import 'package:cake_aide_basic/screens/ingredients/ingredients_screen.dart';
 import 'package:cake_aide_basic/screens/supplies/supplies_screen.dart';
 import 'package:cake_aide_basic/screens/recipes/recipes_screen.dart';
@@ -385,7 +387,12 @@ class _HomeScreenState extends State<HomeScreen> {
     
     // Get user profile data
     final userProfile = _authManager.userProfile;
-    final userName = userProfile?.name ?? 'User';
+    // Fallback to Firebase Auth displayName if Supabase profile not loaded
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+    final userName = userProfile?.name ?? 
+                     firebaseUser?.displayName ?? 
+                     firebaseUser?.email?.split('@').first ?? 
+                     'User';
     final profileImageUrl = userProfile?.profileImageUrl;
     
     return Scaffold(

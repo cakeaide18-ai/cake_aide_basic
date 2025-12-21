@@ -5,11 +5,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import 'package:sentry_flutter/sentry_flutter.dart';
-import 'package:cake_aide_basic/supabase/cake_aide_service.dart';
+import 'package:cake_aide_basic/repositories/user_profile_repository.dart';
 import 'package:cake_aide_basic/models/user_profile.dart';
 
 class AuthService {
   static final FirebaseAuth _auth = FirebaseAuth.instance;
+  static final UserProfileRepository _profileRepo = UserProfileRepository();
   static String? lastAuthErrorMessage;
 
   /// Sign in with Google and Firebase
@@ -33,9 +34,9 @@ class AuthService {
             debugPrint('Google Sign-In (Web): Failed to configure Sentry (non-fatal): $e');
           }
           
-          // Sync to Supabase user profile (non-blocking)
+          // Sync to Firestore user profile (non-blocking)
           syncFirebaseUserToSupabase(user).catchError((e) {
-            debugPrint('Google Sign-In (Web): Failed to sync to Supabase (non-fatal): $e');
+            debugPrint('Google Sign-In (Web): Failed to sync to Firestore (non-fatal): $e');
           });
         }
         return user;
@@ -52,9 +53,9 @@ class AuthService {
             debugPrint('Google Sign-In (Native): Failed to configure Sentry (non-fatal): $e');
           }
           
-          // Sync to Supabase user profile (non-blocking)
+          // Sync to Firestore user profile (non-blocking)
           syncFirebaseUserToSupabase(user).catchError((e) {
-            debugPrint('Google Sign-In (Native): Failed to sync to Supabase (non-fatal): $e');
+            debugPrint('Google Sign-In (Native): Failed to sync to Firestore (non-fatal): $e');
           });
         }
         return user;
@@ -98,10 +99,10 @@ class AuthService {
           final cred = await _auth.signInWithPopup(provider);
           debugPrint('Apple Web Sign-In via popup succeeded for uid=${cred.user?.uid}');
           
-          // Sync to Supabase user profile (non-blocking)
+          // Sync to Firestore user profile (non-blocking)
           if (cred.user != null) {
             syncFirebaseUserToSupabase(cred.user!).catchError((e) {
-              debugPrint('Apple Web Sign-In: Failed to sync to Supabase (non-fatal): $e');
+              debugPrint('Apple Web Sign-In: Failed to sync to Firestore (non-fatal): $e');
             });
           }
           
@@ -193,10 +194,10 @@ class AuthService {
           debugPrint('Apple Sign-In: Failed to configure Sentry (non-fatal): $e');
         }
 
-        // Sync to Supabase user profile (non-blocking)
+        // Sync to Firestore user profile (non-blocking)
         if (userCredential.user != null) {
           syncFirebaseUserToSupabase(userCredential.user!).catchError((e) {
-            debugPrint('Apple Sign-In: Failed to sync to Supabase (non-fatal): $e');
+            debugPrint('Apple Sign-In: Failed to sync to Firestore (non-fatal): $e');
           });
         }
 
@@ -241,9 +242,9 @@ class AuthService {
           debugPrint('SignUp: Failed to configure Sentry (non-fatal): $e');
         }
         
-        // Sync to Supabase user profile (non-blocking)
+        // Sync to Firestore user profile (non-blocking)
         syncFirebaseUserToSupabase(user).catchError((e) {
-          debugPrint('SignUp: Failed to sync to Supabase (non-fatal): $e');
+          debugPrint('SignUp: Failed to sync to Firestore (non-fatal): $e');
         });
         
         debugPrint('SignUp: Successfully created account for ${user.email}');
@@ -356,9 +357,9 @@ class AuthService {
       if (result.user != null) {
         debugPrint('Completed OAuth redirect sign-in for uid=${result.user!.uid}');
         
-        // Sync to Supabase user profile (non-blocking)
+        // Sync to Firestore user profile (non-blocking)
         syncFirebaseUserToSupabase(result.user!).catchError((e) {
-          debugPrint('OAuth Redirect: Failed to sync to Supabase (non-fatal): $e');
+          debugPrint('OAuth Redirect: Failed to sync to Firestore (non-fatal): $e');
         });
       }
     } on FirebaseAuthException catch (e) {
@@ -387,11 +388,11 @@ class AuthService {
   }
 
   /// Sync Firebase user to Supabase user_profiles table
-  /// Creates or updates a user profile in Supabase based on Firebase user data
+  /// Creates or updates a user profile in Firestore based on Firebase Auth user data
   static Future<void> syncFirebaseUserToSupabase(User firebaseUser) async {
     try {
       // Check if profile already exists
-      final existingProfile = await CakeAideService.getUserProfile(firebaseUser.uid);
+      final existingProfile = await _profileRepo.getByUserId(firebaseUser.uid);
       
       if (existingProfile == null) {
         // Create new profile with Firebase user data
@@ -410,22 +411,20 @@ class AuthService {
           updatedAt: DateTime.now(),
         );
         
-        await CakeAideService.createUserProfile(newProfile);
-        debugPrint('Created Supabase profile for Firebase user ${firebaseUser.uid}');
+        await _profileRepo.setUserProfile(firebaseUser.uid, newProfile);
+        debugPrint('Created Firestore profile for Firebase user ${firebaseUser.uid}');
       } else {
         // Update existing profile if Firebase has newer data
         if (firebaseUser.displayName != null && firebaseUser.displayName!.isNotEmpty && 
             existingProfile.name.isEmpty) {
-          final updatedProfile = existingProfile.copyWith(
-            name: firebaseUser.displayName,
-            updatedAt: DateTime.now(),
-          );
-          await CakeAideService.updateUserProfile(updatedProfile);
-          debugPrint('Updated Supabase profile name for Firebase user ${firebaseUser.uid}');
+          await _profileRepo.updateProfile(firebaseUser.uid, {
+            'name': firebaseUser.displayName,
+          });
+          debugPrint('Updated Firestore profile name for Firebase user ${firebaseUser.uid}');
         }
       }
     } catch (e) {
-      debugPrint('Error syncing Firebase user to Supabase: $e');
+      debugPrint('Error syncing Firebase user to Firestore: $e');
       // Don't throw - this is a non-fatal sync operation
     }
   }
