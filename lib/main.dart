@@ -457,7 +457,9 @@ class _FirstFrameWatchdogState extends State<FirstFrameWatchdog> {
     if (!_timedOut || _firstFrameSeen) return child;
 
     // Recovery overlay: keep it dependency-free and bright to avoid blending with black.
-    return Stack(children: [
+    return Stack(
+      alignment: Alignment.center, // Use non-directional alignment
+      children: [
       child,
       Positioned.fill(
         child: ColoredBox(

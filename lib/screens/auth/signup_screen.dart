@@ -30,12 +30,46 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
-  void _signup() {
+  void _signup() async {
     if (_formKey.currentState!.validate()) {
-      // Simple validation - in real app, this would connect to backend
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const ProfileCreationScreen()),
-      );
+      try {
+        // Show loading indicator
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const Center(child: CircularProgressIndicator()),
+        );
+
+        // Create Firebase account
+        final user = await AuthService.signUpWithEmail(
+          _emailController.text.trim(),
+          _passwordController.text,
+          _nameController.text.trim(),
+        );
+
+        if (!mounted) return;
+        Navigator.of(context).pop(); // Dismiss loading indicator
+
+        if (user != null) {
+          // Success - navigate to profile creation
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const ProfileCreationScreen()),
+          );
+        } else {
+          // Show error message
+          final message = AuthService.lastAuthErrorMessage ?? 'Sign up failed. Please try again.';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(message)),
+          );
+        }
+      } catch (e) {
+        if (!mounted) return;
+        Navigator.of(context).pop(); // Dismiss loading indicator if still showing
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
     }
   }
 

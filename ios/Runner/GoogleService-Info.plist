@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>939745556996-e5m5tm420e6qptnnltadd67vn2hi71ph.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.939745556996-e5m5tm420e6qptnnltadd67vn2hi71ph</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>939745556996-ttp4caunivrq1j5e91jl5nrhu1icl1cl.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyAcq-1vzx75UkT750k1XA-hSz68K2v3Fdc</string>
+	<key>GCM_SENDER_ID</key>
+	<string>939745556996</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.cakeaide.cakeaideapp2</string>
+	<key>PROJECT_ID</key>
+	<string>dlgrijpah7jlvfjuexnmcmv4p0rmbc</string>
+	<key>STORAGE_BUCKET</key>
+	<string>dlgrijpah7jlvfjuexnmcmv4p0rmbc.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:939745556996:ios:4833fb140a01da6e531351</string>
+</dict>
+</plist>

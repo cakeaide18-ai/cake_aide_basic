@@ -10,32 +10,7 @@ class RemindersScreen extends StatefulWidget {
 }
 
 class _RemindersScreenState extends State<RemindersScreen> {
-  final List<ReminderItem> _reminders = [
-    ReminderItem(
-      title: 'Order Spider-Man cake ingredients',
-      description: 'Need to get red and blue food coloring, vanilla extract, and cake flour',
-      time: 'Today, 10:00 AM',
-      isCompleted: false,
-      priority: ReminderPriority.high,
-      notes: 'Check specialty baking store first',
-    ),
-    ReminderItem(
-      title: 'Prep Barbie cake decorations',
-      description: 'Create fondant figures and edible glitter decorations',
-      time: 'Tomorrow, 2:00 PM',
-      isCompleted: false,
-      priority: ReminderPriority.medium,
-      notes: 'Pink and purple color scheme',
-    ),
-    ReminderItem(
-      title: 'Follow up with client about birthday cake',
-      description: 'Confirm final design details and delivery time',
-      time: 'Wed, 9:00 AM',
-      isCompleted: true,
-      priority: ReminderPriority.low,
-      notes: 'Client prefers morning calls',
-    ),
-  ];
+  final List<ReminderItem> _reminders = [];
 
   void _updateReminder(int index, ReminderItem updatedReminder) {
     setState(() {

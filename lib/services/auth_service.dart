@@ -209,6 +209,131 @@ class AuthService {
     }
   }
 
+  /// Sign up with email and password
+  static Future<User?> signUpWithEmail(String email, String password, String displayName) async {
+    try {
+      lastAuthErrorMessage = null;
+      debugPrint('SignUp: Creating account for $email');
+      
+      final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      
+      final user = userCredential.user;
+      if (user != null) {
+        // Update display name
+        try {
+          await user.updateDisplayName(displayName);
+          await user.reload();
+          debugPrint('SignUp: Updated display name to: $displayName');
+        } catch (e) {
+          debugPrint('SignUp: Failed to update display name (non-fatal): $e');
+        }
+        
+        // Attach user to Sentry (non-blocking)
+        try {
+          Sentry.configureScope((scope) => scope.setUser(
+            SentryUser(id: user.uid, email: user.email, username: displayName),
+          ));
+          debugPrint('SignUp: Configured Sentry for user ${user.uid}');
+        } catch (e) {
+          debugPrint('SignUp: Failed to configure Sentry (non-fatal): $e');
+        }
+        
+        // Sync to Supabase user profile (non-blocking)
+        syncFirebaseUserToSupabase(user).catchError((e) {
+          debugPrint('SignUp: Failed to sync to Supabase (non-fatal): $e');
+        });
+        
+        debugPrint('SignUp: Successfully created account for ${user.email}');
+      }
+      
+      return user;
+    } on FirebaseAuthException catch (e) {
+      debugPrint('SignUp Error: ${e.code} - ${e.message}');
+      
+      // Provide user-friendly error messages
+      switch (e.code) {
+        case 'email-already-in-use':
+          lastAuthErrorMessage = 'An account with this email already exists.';
+          break;
+        case 'invalid-email':
+          lastAuthErrorMessage = 'Invalid email address.';
+          break;
+        case 'operation-not-allowed':
+        case 'internal-error':
+          lastAuthErrorMessage = 'Email/Password sign-up is not enabled. Please contact support or use Google/Apple sign-in.';
+          break;
+        case 'weak-password':
+          lastAuthErrorMessage = 'Password is too weak. Please use a stronger password.';
+          break;
+        default:
+          lastAuthErrorMessage = e.message ?? 'Sign up failed. Please try again.';
+      }
+      return null;
+    } catch (e) {
+      debugPrint('SignUp Error: $e');
+      lastAuthErrorMessage = 'Sign up failed: $e';
+      return null;
+    }
+  }
+
+  /// Sign in with email and password
+  static Future<User?> signInWithEmail(String email, String password) async {
+    try {
+      lastAuthErrorMessage = null;
+      debugPrint('SignIn: Attempting sign in for $email');
+      
+      final UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      
+      final user = userCredential.user;
+      if (user != null) {
+        // Attach user to Sentry (non-blocking)
+        try {
+          Sentry.configureScope((scope) => scope.setUser(
+            SentryUser(id: user.uid, email: user.email, username: user.displayName),
+          ));
+          debugPrint('SignIn: Configured Sentry for user ${user.uid}');
+        } catch (e) {
+          debugPrint('SignIn: Failed to configure Sentry (non-fatal): $e');
+        }
+        
+        debugPrint('SignIn: Successfully signed in ${user.email}');
+      }
+      
+      return user;
+    } on FirebaseAuthException catch (e) {
+      debugPrint('SignIn Error: ${e.code} - ${e.message}');
+      
+      // Provide user-friendly error messages
+      switch (e.code) {
+        case 'user-not-found':
+          lastAuthErrorMessage = 'No account found with this email.';
+          break;
+        case 'wrong-password':
+          lastAuthErrorMessage = 'Incorrect password.';
+          break;
+        case 'invalid-email':
+          lastAuthErrorMessage = 'Invalid email address.';
+          break;
+        case 'user-disabled':
+          lastAuthErrorMessage = 'This account has been disabled.';
+          break;
+        default:
+          lastAuthErrorMessage = e.message ?? 'Sign in failed. Please try again.';
+      }
+      return null;
+    } catch (e) {
+      debugPrint('SignIn Error: $e');
+      lastAuthErrorMessage = 'Sign in failed: $e';
+      return null;
+    }
+  }
+
   /// Check if Apple Sign-In is available
   static Future<bool> isAppleSignInAvailable() async {
     try {

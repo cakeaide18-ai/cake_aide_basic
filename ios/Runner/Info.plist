@@ -70,6 +70,20 @@
     <string>https</string>
   </array>
   
+  <!-- Custom URL scheme for Google Sign In OAuth redirect -->
+  <key>CFBundleURLTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleTypeRole</key>
+      <string>Editor</string>
+      <key>CFBundleURLSchemes</key>
+      <array>
+        <string>app-1-939745556996-ios-4833fb140a01da6e531351</string>
+        <string>com.googleusercontent.apps.939745556996-e5m5tm420e6qptnnltadd67vn2hi71ph</string>
+      </array>
+    </dict>
+  </array>
+  
   <!-- Background Modes for timer (BGTaskScheduler compliant) -->
   <key>UIBackgroundModes</key>
   <array>

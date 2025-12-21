@@ -45,12 +45,47 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _login() {
+  void _login() async {
     if (_formKey.currentState!.validate()) {
-      // Simple validation - in real app, this would connect to backend
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const MainNavigation()),
-      );
+      try {
+        // Show loading indicator
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const Center(child: CircularProgressIndicator()),
+        );
+
+        debugPrint('LoginScreen: Starting email/password sign in');
+        final user = await AuthService.signInWithEmail(
+          _emailController.text.trim(),
+          _passwordController.text,
+        );
+        debugPrint('LoginScreen: Email sign in completed, user: ${user?.uid}');
+
+        if (!mounted) return;
+        Navigator.of(context).pop(); // Dismiss loading indicator
+
+        if (user != null) {
+          debugPrint('LoginScreen: Navigating to MainNavigation');
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const MainNavigation()),
+          );
+        } else {
+          final message = AuthService.lastAuthErrorMessage ?? 'Sign in failed. Please try again.';
+          debugPrint('LoginScreen: Email sign in failed: $message');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(message)),
+          );
+        }
+      } catch (e) {
+        debugPrint('LoginScreen: Email sign in error: $e');
+        if (!mounted) return;
+        Navigator.of(context).pop(); // Dismiss loading indicator if still showing
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
     }
   }
 
