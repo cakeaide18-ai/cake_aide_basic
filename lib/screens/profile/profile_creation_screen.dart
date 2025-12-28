@@ -217,16 +217,9 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
           permission = Permission.photos;
         }
         
-        var status = await permission.status;
+        final status = await permission.request();
         
-        // Request permission if not granted
-        if (!status.isGranted && !status.isLimited) {
-          status = await permission.request();
-        }
-        
-        // Allow limited access on iOS (user selected some photos) 
-        // Also allow granted status, but deny denied/restricted/permanentlyDenied
-        if (status.isDenied || status.isPermanentlyDenied || status.isRestricted) {
+        if (status.isDenied || status.isPermanentlyDenied) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
