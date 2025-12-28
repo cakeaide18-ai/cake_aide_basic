@@ -192,9 +192,13 @@ class _AddShoppingListScreenState extends State<AddShoppingListScreen> {
     final theme = Theme.of(context);
     final isEditing = widget.shoppingList != null;
 
-    return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
-      appBar: AppBar(
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        backgroundColor: theme.colorScheme.surface,
+        appBar: AppBar(
         title: Text(isEditing ? 'Edit Shopping List' : 'Create Shopping List'),
         flexibleSpace: Container(
           decoration: BoxDecoration(
@@ -689,6 +693,7 @@ class _AddShoppingListScreenState extends State<AddShoppingListScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

@@ -108,9 +108,13 @@ class _AddSupplyScreenState extends State<AddSupplyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      appBar: AppBar(
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        appBar: AppBar(
         title: Text(_isEditing ? 'Edit Supply' : 'Add Supply'),
         flexibleSpace: Container(
           decoration: BoxDecoration(
@@ -329,6 +333,7 @@ class _AddSupplyScreenState extends State<AddSupplyScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

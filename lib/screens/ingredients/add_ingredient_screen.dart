@@ -114,9 +114,13 @@ class _AddIngredientScreenState extends State<AddIngredientScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      appBar: AppBar(
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        appBar: AppBar(
         title: Text(isEditing ? 'Edit Ingredient' : 'Add Ingredient'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
@@ -322,6 +326,7 @@ class _AddIngredientScreenState extends State<AddIngredientScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }
