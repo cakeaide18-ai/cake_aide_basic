@@ -92,12 +92,17 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
-      appBar: AppBar(
-        title: const Text('Edit Order'),
-        // Use themed AppBar colors from theme.dart (pink scheme)
-        actions: [
+    return GestureDetector(
+      onTap: () {
+        // Dismiss keyboard when tapping outside text fields
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        backgroundColor: theme.colorScheme.surface,
+        appBar: AppBar(
+          title: const Text('Edit Order'),
+          // Use themed AppBar colors from theme.dart (pink scheme)
+          actions: [
           IconButton(
             tooltip: 'Share',
             icon: const Icon(Icons.ios_share),
@@ -151,6 +156,7 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }
