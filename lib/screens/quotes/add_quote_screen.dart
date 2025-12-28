@@ -353,9 +353,13 @@ Delivery: ${_settingsService.getCurrencySymbol()}${_deliveryCost.toStringAsFixed
   
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      appBar: AppBar(
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        appBar: AppBar(
         title: Text(widget.quote != null ? 'Edit Quote' : 'Create Quote'),
         flexibleSpace: Container(
           decoration: BoxDecoration(
@@ -774,6 +778,7 @@ Delivery: ${_settingsService.getCurrencySymbol()}${_deliveryCost.toStringAsFixed
             ],
           ),
         ),
+      ),
       ),
     );
   }

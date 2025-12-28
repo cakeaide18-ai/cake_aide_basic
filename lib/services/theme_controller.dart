@@ -13,7 +13,7 @@ class ThemeController extends ChangeNotifier {
 
   static const _prefsKey = 'app_theme_mode';
 
-  ThemeMode _themeMode = ThemeMode.system;
+  ThemeMode _themeMode = ThemeMode.light;
   ThemeMode get themeMode => _themeMode;
 
   /// Load the persisted theme mode from SharedPreferences.

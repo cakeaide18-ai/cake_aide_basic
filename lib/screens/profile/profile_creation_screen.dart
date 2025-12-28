@@ -207,42 +207,7 @@ class _ProfileCreationScreenState extends State<ProfileCreationScreen> {
     Navigator.pop(context);
     
     try {
-      // Skip permission handling on web
-      if (!kIsWeb) {
-        // Check and request permissions for mobile platforms
-        Permission permission;
-        if (source == ImageSource.camera) {
-          permission = Permission.camera;
-        } else {
-          permission = Permission.photos;
-        }
-        
-        final status = await permission.request();
-        
-        if (status.isDenied || status.isPermanentlyDenied) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  source == ImageSource.camera
-                      ? 'Camera permission is required to take photos'
-                      : 'Photo library permission is required to select images',
-                ),
-                backgroundColor: Colors.red,
-                action: status.isPermanentlyDenied
-                    ? SnackBarAction(
-                        label: 'Settings',
-                        onPressed: () => openAppSettings(),
-                      )
-                    : null,
-              ),
-            );
-          }
-          return;
-        }
-      }
-      
-      // Pick image
+      // Pick image directly without complex permission handling
       debugPrint('Attempting to pick image from ${source == ImageSource.camera ? "camera" : "gallery"}');
       final XFile? image = await _picker.pickImage(
         source: source,
