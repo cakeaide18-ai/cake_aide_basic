@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cake_aide_basic/services/settings_service.dart';
 import 'package:cake_aide_basic/widgets/settings_icon.dart';
 import 'package:cake_aide_basic/widgets/business_settings_icon.dart';
