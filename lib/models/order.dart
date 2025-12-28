@@ -107,8 +107,8 @@ class Order {
       'customerPhone': customerPhone,
       'customerEmail': customerEmail,
       'status': status.name,
-      'orderDate': orderDate,
-      'deliveryDate': deliveryDate,
+      'orderDate': orderDate != null ? Timestamp.fromDate(orderDate!) : null,
+      'deliveryDate': deliveryDate != null ? Timestamp.fromDate(deliveryDate!) : null,
       'deliveryTime': deliveryTime != null ? '${deliveryTime!.hour}:${deliveryTime!.minute}' : null,
       'notes': notes,
       'cakeDetails': cakeDetails,
@@ -117,8 +117,7 @@ class Order {
       'isCustomDesign': isCustomDesign,
       'customDesignNotes': customDesignNotes,
       'imageUrls': imageUrls,
-      'createdAt': createdAt,
-      'updatedAt': updatedAt,
+      // createdAt and updatedAt are handled by FirebaseRepository
     };
   }
 
