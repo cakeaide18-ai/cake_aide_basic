@@ -23,7 +23,7 @@ class _AddSupplyScreenState extends State<AddSupplyScreen> {
   
   String _selectedUnit = 'pieces';
 
-  final List<String> _units = ['pieces', 'boxes', 'packs', 'dozens', 'sets', 'grams', 'kilograms', 'ounces', 'pounds'];
+  final List<String> _units = ['pieces', 'boxes', 'packs', 'sets', 'grams', 'kilograms', 'ounces', 'pounds'];
 
   final SupplyRepository _repository = SupplyRepository();
   final SettingsService _settingsService = SettingsService();

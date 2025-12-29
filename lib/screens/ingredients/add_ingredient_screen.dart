@@ -28,7 +28,6 @@ class _AddIngredientScreenState extends State<AddIngredientScreen> {
     'liters',
     'milliliters',
     'pieces',
-    'dozen',
     'bottles',
     'cups',
     'tablespoons',
