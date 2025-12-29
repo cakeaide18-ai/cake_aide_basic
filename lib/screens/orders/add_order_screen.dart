@@ -485,11 +485,20 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
   }
 
   void _saveOrder() async {
-    // Prevent multiple saves
-    if (_isSaving) return;
+    debugPrint('AddOrderScreen: _saveOrder() called');
     
+    // Prevent multiple saves
+    if (_isSaving) {
+      debugPrint('AddOrderScreen: Already saving, returning');
+      return;
+    }
+    
+    debugPrint('AddOrderScreen: Validating form...');
     if (_formKey.currentState!.validate()) {
+      debugPrint('AddOrderScreen: Form validation passed');
+      
       if (_deliveryDate == null) {
+        debugPrint('AddOrderScreen: Delivery date is null');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Please select a delivery date'),
@@ -499,6 +508,7 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
         return;
       }
 
+      debugPrint('AddOrderScreen: All validations passed, proceeding to save');
       setState(() {
         _isSaving = true;
       });
@@ -583,6 +593,14 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
           );
         }
       }
+    } else {
+      debugPrint('AddOrderScreen: ❌ Form validation FAILED');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill in all required fields'),
+          backgroundColor: Colors.orange,
+        ),
+      );
     }
   }
 
