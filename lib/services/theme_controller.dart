@@ -21,20 +21,29 @@ class ThemeController extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final value = prefs.getString(_prefsKey);
-      switch (value) {
-        case 'light':
-          _themeMode = ThemeMode.light;
-          break;
-        case 'dark':
-          _themeMode = ThemeMode.dark;
-          break;
-        case 'system':
-        default:
-          _themeMode = ThemeMode.system;
+      // If no saved preference, default to light mode (not system)
+      if (value == null) {
+        _themeMode = ThemeMode.light;
+        // Save the default to prevent this logic on next load
+        await prefs.setString(_prefsKey, 'light');
+      } else {
+        switch (value) {
+          case 'light':
+            _themeMode = ThemeMode.light;
+            break;
+          case 'dark':
+            _themeMode = ThemeMode.dark;
+            break;
+          case 'system':
+            _themeMode = ThemeMode.system;
+            break;
+          default:
+            _themeMode = ThemeMode.light;
+        }
       }
       notifyListeners();
     } catch (_) {
-      // Ignore errors and keep default
+      // Ignore errors and keep default (light)
     }
   }
 
