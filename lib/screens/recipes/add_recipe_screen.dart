@@ -419,6 +419,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
           const SizedBox(height: 12),
           // Ingredient Dropdown
           DropdownButtonFormField<Ingredient>(
+            value: recipeIngredient.ingredient, // Pre-select the current ingredient
             decoration: InputDecoration(
               labelText: 'Select Ingredient',
               border: OutlineInputBorder(
