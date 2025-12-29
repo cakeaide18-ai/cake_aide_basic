@@ -5,6 +5,8 @@ import 'package:cake_aide_basic/models/recipe.dart';
 import 'package:cake_aide_basic/models/supply.dart';
 import 'package:cake_aide_basic/services/data_service.dart';
 import 'package:cake_aide_basic/services/settings_service.dart';
+import 'package:cake_aide_basic/repositories/recipe_repository.dart';
+import 'package:cake_aide_basic/repositories/supply_repository.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:cake_aide_basic/theme.dart';
 
@@ -21,6 +23,8 @@ class _AddQuoteScreenState extends State<AddQuoteScreen> {
   final _formKey = GlobalKey<FormState>();
   final DataService _dataService = DataService();
   final SettingsService _settingsService = SettingsService();
+  final RecipeRepository _recipeRepository = RecipeRepository();
+  final SupplyRepository _supplyRepository = SupplyRepository();
   
   // Form controllers
   final _nameController = TextEditingController();
@@ -107,11 +111,16 @@ class _AddQuoteScreenState extends State<AddQuoteScreen> {
   double get _deliveryCost => double.tryParse(_deliveryController.text) ?? 0.0;
   double get _totalCost => _baseCost + _marginAmount + _deliveryCost;
   
-  void _addRecipe() {
+  void _addRecipe() async {
+    // Load recipes from Firestore
+    final recipes = await _recipeRepository.getAll();
+    
+    if (!mounted) return;
+    
     showDialog(
       context: context,
       builder: (context) => _RecipeSelectionDialog(
-        recipes: _dataService.recipes,
+        recipes: recipes,
         onRecipeSelected: (recipe, quantity) {
           setState(() {
             _selectedRecipes.add(QuoteRecipe(recipe: recipe, quantity: quantity));
@@ -129,11 +138,16 @@ class _AddQuoteScreenState extends State<AddQuoteScreen> {
     _updateCalculations(); // Update calculations when recipe is removed
   }
   
-  void _addSupply() {
+  void _addSupply() async {
+    // Load supplies from Firestore
+    final supplies = await _supplyRepository.getAll();
+    
+    if (!mounted) return;
+    
     showDialog(
       context: context,
       builder: (context) => _SupplySelectionDialog(
-        supplies: _dataService.supplies,
+        supplies: supplies,
         onSupplySelected: (supply, quantity) {
           setState(() {
             _selectedSupplies.add(QuoteSupply(supply: supply, quantity: quantity));
