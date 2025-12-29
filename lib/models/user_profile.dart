@@ -73,6 +73,7 @@ class UserProfile {
       'businessType': businessType,
       'bio': bio,
       'profileImageUrl': profileImageUrl,
+      'owner_id': id, // Add owner_id field for Firestore security rules
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
     };
