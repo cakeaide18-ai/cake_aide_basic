@@ -4,49 +4,49 @@ service cloud.firestore {
     // User Profiles - Private to owner
     match /user_profiles/{profileId} {
       allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.owner_id;
-      allow create: if request.auth != null && request.auth.uid == resource.data.owner_id;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.owner_id;
     }
 
     // Ingredients - Private to owner
     match /ingredients/{ingredientId} {
       allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.owner_id;
-      allow create: if request.auth != null && request.auth.uid == resource.data.owner_id;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.owner_id;
     }
 
     // Supplies - Private to owner
     match /supplies/{supplyId} {
       allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.owner_id;
-      allow create: if request.auth != null && request.auth.uid == resource.data.owner_id;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.owner_id;
     }
 
     // Recipes - Private to owner
     match /recipes/{recipeId} {
       allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.owner_id;
-      allow create: if request.auth != null && request.auth.uid == resource.data.owner_id;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.owner_id;
     }
 
     // Shopping Lists - Private to owner
     match /shopping_lists/{listId} {
       allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.owner_id;
-      allow create: if request.auth != null && request.auth.uid == resource.data.owner_id;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.owner_id;
     }
 
     // Orders - Private to owner
     match /orders/{orderId} {
       allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.owner_id;
-      allow create: if request.auth != null && request.auth.uid == resource.data.owner_id;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.owner_id;
     }
 
     // Quotes - Private to owner
     match /quotes/{quoteId} {
       allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.owner_id;
-      allow create: if request.auth != null && request.auth.uid == resource.data.owner_id;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.owner_id;
     }
 
     // Timer Recordings - Private to owner
     match /timer_recordings/{recordingId} {
       allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.owner_id;
-      allow create: if request.auth != null && request.auth.uid == resource.data.owner_id;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.owner_id;
     }
 
     // Support Issues - Private to owner
