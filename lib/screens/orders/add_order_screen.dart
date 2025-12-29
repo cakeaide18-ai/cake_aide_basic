@@ -535,7 +535,14 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
           updatedAt: DateTime.now(),
         );
 
-        await _repository.add(order);
+        // Add detailed logging for debugging
+        debugPrint('AddOrderScreen: About to save order: ${order.name}');
+        debugPrint('AddOrderScreen: Order status: ${order.status}');
+        debugPrint('AddOrderScreen: Customer: ${order.customerName}');
+        debugPrint('AddOrderScreen: Delivery date: ${order.deliveryDate}');
+        
+        final orderId = await _repository.add(order);
+        debugPrint('AddOrderScreen: Order saved successfully with ID: $orderId');
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -546,15 +553,32 @@ class _AddOrderScreenState extends State<AddOrderScreen> {
           );
           Navigator.pop(context, true);
         }
-      } catch (e) {
+      } catch (e, stackTrace) {
+        debugPrint('AddOrderScreen: ❌ Error saving order: $e');
+        debugPrint('AddOrderScreen: Stack trace: $stackTrace');
+        
         if (mounted) {
           setState(() {
             _isSaving = false;
           });
+          
+          // More detailed error message
+          String errorMessage = 'Error saving order: ';
+          if (e.toString().contains('PERMISSION_DENIED')) {
+            errorMessage += 'Permission denied. Please check your login status.';
+          } else if (e.toString().contains('User not authenticated')) {
+            errorMessage += 'You must be logged in to create orders.';
+          } else if (e.toString().contains('index')) {
+            errorMessage += 'Database index error. Please contact support.';
+          } else {
+            errorMessage += e.toString();
+          }
+          
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error saving order: $e'),
+              content: Text(errorMessage),
               backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
             ),
           );
         }

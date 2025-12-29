@@ -542,48 +542,75 @@ class _EditOrderScreenState extends State<EditOrderScreen> {
 
   void _saveOrder() async {
     if (_formKey.currentState!.validate()) {
-      // Convert newly picked images to base64 strings; existing refs are preserved
-      final newImageRefs = <String>[];
-      final files = _cakeImages ?? const <PlatformFile>[];
-      for (final f in files) {
-        if (f.bytes != null) {
-          newImageRefs.add(base64Encode(f.bytes!));
+      try {
+        // Convert newly picked images to base64 strings; existing refs are preserved
+        final newImageRefs = <String>[];
+        final files = _cakeImages ?? const <PlatformFile>[];
+        for (final f in files) {
+          if (f.bytes != null) {
+            newImageRefs.add(base64Encode(f.bytes!));
+          }
         }
-      }
 
-      final combinedImages = <String>[..._existingImageRefs, ...newImageRefs];
+        final combinedImages = <String>[..._existingImageRefs, ...newImageRefs];
 
-      final updatedOrder = Order(
-        id: widget.order.id, // Keep the same ID
-        name: _orderNameController.text,
-        customerName: _customerNameController.text,
-        customerPhone: _customerPhoneController.text,
-        customerEmail: _customerEmailController.text,
-        cakeDetails: _cakeDetailsController.text,
-        price: double.tryParse(_priceController.text) ?? 0.0,
-        servings: int.tryParse(_servingsController.text) ?? 0,
-        status: _selectedStatus,
-        orderDate: _orderDate ?? DateTime.now(),
-        deliveryDate: _deliveryDate,
-        deliveryTime: _deliveryTime,
-        isCustomDesign: _isCustomDesign,
-        customDesignNotes: _customDesignController.text,
-        notes: _notesController.text,
-        imageUrls: combinedImages,
-        createdAt: widget.order.createdAt, // Keep original creation time
-        updatedAt: DateTime.now(), // Update the modification time
-      );
-
-      await _repository.update(updatedOrder.id, updatedOrder);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Order updated successfully!'),
-            backgroundColor: Colors.green,
-          ),
+        final updatedOrder = Order(
+          id: widget.order.id, // Keep the same ID
+          name: _orderNameController.text,
+          customerName: _customerNameController.text,
+          customerPhone: _customerPhoneController.text,
+          customerEmail: _customerEmailController.text,
+          cakeDetails: _cakeDetailsController.text,
+          price: double.tryParse(_priceController.text) ?? 0.0,
+          servings: int.tryParse(_servingsController.text) ?? 0,
+          status: _selectedStatus,
+          orderDate: _orderDate ?? DateTime.now(),
+          deliveryDate: _deliveryDate,
+          deliveryTime: _deliveryTime,
+          isCustomDesign: _isCustomDesign,
+          customDesignNotes: _customDesignController.text,
+          notes: _notesController.text,
+          imageUrls: combinedImages,
+          createdAt: widget.order.createdAt, // Keep original creation time
+          updatedAt: DateTime.now(), // Update the modification time
         );
-        Navigator.pop(context);
+
+        debugPrint('EditOrderScreen: About to update order: ${updatedOrder.id}');
+        await _repository.update(updatedOrder.id, updatedOrder);
+        debugPrint('EditOrderScreen: Order updated successfully');
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Order updated successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pop(context);
+        }
+      } catch (e, stackTrace) {
+        debugPrint('EditOrderScreen: ❌ Error updating order: $e');
+        debugPrint('EditOrderScreen: Stack trace: $stackTrace');
+        
+        if (mounted) {
+          // More detailed error message
+          String errorMessage = 'Error updating order: ';
+          if (e.toString().contains('PERMISSION_DENIED')) {
+            errorMessage += 'Permission denied. Please check your login status.';
+          } else if (e.toString().contains('User not authenticated')) {
+            errorMessage += 'You must be logged in to update orders.';
+          } else {
+            errorMessage += e.toString();
+          }
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
       }
     }
   }

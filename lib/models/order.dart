@@ -101,7 +101,7 @@ class Order {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      // Note: 'id' is NOT included - Firestore document ID is stored separately
       'name': name,
       'customerName': customerName,
       'customerPhone': customerPhone,
