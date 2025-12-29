@@ -43,6 +43,12 @@ service cloud.firestore {
       allow create: if request.auth != null && request.auth.uid == request.resource.data.owner_id;
     }
 
+    // Reminders - Private to owner
+    match /reminders/{reminderId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.owner_id;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.owner_id;
+    }
+
     // Timer Recordings - Private to owner
     match /timer_recordings/{recordingId} {
       allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.owner_id;

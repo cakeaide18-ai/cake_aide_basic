@@ -147,9 +147,11 @@ class AuthService {
         }
       } else {
         // Native (iOS/macOS): use SIWA plugin + Firebase credential with nonce
+        debugPrint('Apple Sign-In (Native): Step 1 - Generating nonce');
         final rawNonce = _generateNonce();
         final nonce = _sha256ofString(rawNonce);
 
+        debugPrint('Apple Sign-In (Native): Step 2 - Requesting Apple ID credential');
         final appleCredential = await SignInWithApple.getAppleIDCredential(
           scopes: const [
             AppleIDAuthorizationScopes.email,
@@ -158,28 +160,39 @@ class AuthService {
           // Provide a SHA256 nonce to bind the ID token to this request
           nonce: nonce,
         );
+        debugPrint('Apple Sign-In (Native): Step 3 - Received Apple credential, email: ${appleCredential.email ?? "not provided"}');
 
+        debugPrint('Apple Sign-In (Native): Step 4 - Creating Firebase OAuth credential');
         final oAuthProvider = OAuthProvider('apple.com');
         final credential = oAuthProvider.credential(
           idToken: appleCredential.identityToken,
           rawNonce: rawNonce,
         );
 
+        debugPrint('Apple Sign-In (Native): Step 5 - Signing in with Firebase credential');
         final UserCredential userCredential = await _auth.signInWithCredential(credential);
+        debugPrint('Apple Sign-In (Native): Step 6 - Firebase sign-in successful, uid: ${userCredential.user?.uid}');
+
+        debugPrint('Apple Sign-In (Native): Step 6 - Firebase sign-in successful, uid: ${userCredential.user?.uid}');
 
         // Update display name if provided (non-blocking, don't fail sign-in if this fails)
+        debugPrint('Apple Sign-In (Native): Step 7 - Checking for display name update');
         if (appleCredential.givenName != null && userCredential.user != null) {
           try {
             final displayName = '${appleCredential.givenName} ${appleCredential.familyName ?? ''}'.trim();
+            debugPrint('Apple Sign-In (Native): Step 7a - Updating display name to: $displayName');
             await userCredential.user!.updateDisplayName(displayName);
-            debugPrint('Apple Sign-In: Updated display name to: $displayName');
+            debugPrint('Apple Sign-In (Native): Step 7b - Display name updated successfully');
           } catch (e) {
-            debugPrint('Apple Sign-In: Failed to update display name (non-fatal): $e');
+            debugPrint('Apple Sign-In (Native): Step 7c - Failed to update display name (non-fatal): $e');
             // Don't fail the sign-in process if display name update fails
           }
+        } else {
+          debugPrint('Apple Sign-In (Native): Step 7 - No display name to update (givenName: ${appleCredential.givenName})');
         }
 
         // Attach user to Sentry (non-blocking)
+        debugPrint('Apple Sign-In (Native): Step 8 - Configuring Sentry');
         try {
           if (userCredential.user != null) {
             Sentry.configureScope((scope) => scope.setUser(
@@ -189,18 +202,21 @@ class AuthService {
                 username: userCredential.user!.displayName,
               ),
             ));
+            debugPrint('Apple Sign-In (Native): Step 8a - Sentry configured successfully');
           }
         } catch (e) {
-          debugPrint('Apple Sign-In: Failed to configure Sentry (non-fatal): $e');
+          debugPrint('Apple Sign-In (Native): Step 8b - Failed to configure Sentry (non-fatal): $e');
         }
 
         // Sync to Firestore user profile (non-blocking)
+        debugPrint('Apple Sign-In (Native): Step 9 - Starting Firestore sync');
         if (userCredential.user != null) {
           syncFirebaseUserToSupabase(userCredential.user!).catchError((e) {
-            debugPrint('Apple Sign-In: Failed to sync to Firestore (non-fatal): $e');
+            debugPrint('Apple Sign-In (Native): Step 9a - Failed to sync to Firestore (non-fatal): $e');
           });
         }
 
+        debugPrint('Apple Sign-In (Native): Step 10 - Complete! Returning user: ${userCredential.user?.uid}');
         return userCredential.user;
       }
     } catch (e) {
