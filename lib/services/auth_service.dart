@@ -163,6 +163,9 @@ class AuthService {
         debugPrint('Apple Sign-In (Native): Step 3 - Received Apple credential, email: ${appleCredential.email ?? "not provided"}');
 
         debugPrint('Apple Sign-In (Native): Step 4 - Creating Firebase OAuth credential');
+        debugPrint('Apple Sign-In (Native): Step 4a - Identity Token length: ${appleCredential.identityToken?.length ?? 0}');
+        debugPrint('Apple Sign-In (Native): Step 4b - Raw Nonce length: ${rawNonce.length}');
+        
         final oAuthProvider = OAuthProvider('apple.com');
         final credential = oAuthProvider.credential(
           idToken: appleCredential.identityToken,
@@ -170,8 +173,16 @@ class AuthService {
         );
 
         debugPrint('Apple Sign-In (Native): Step 5 - Signing in with Firebase credential');
-        final UserCredential userCredential = await _auth.signInWithCredential(credential);
-        debugPrint('Apple Sign-In (Native): Step 6 - Firebase sign-in successful, uid: ${userCredential.user?.uid}');
+        UserCredential userCredential;
+        try {
+          userCredential = await _auth.signInWithCredential(credential);
+          debugPrint('Apple Sign-In (Native): Step 6 - Firebase sign-in successful, uid: ${userCredential.user?.uid}');
+        } on FirebaseAuthException catch (authError) {
+          debugPrint('Apple Sign-In (Native): Firebase Auth Error Code: ${authError.code}');
+          debugPrint('Apple Sign-In (Native): Firebase Auth Error Message: ${authError.message}');
+          debugPrint('Apple Sign-In (Native): Firebase Auth Error Details: ${authError.toString()}');
+          rethrow;
+        }
 
         debugPrint('Apple Sign-In (Native): Step 6 - Firebase sign-in successful, uid: ${userCredential.user?.uid}');
 
@@ -219,8 +230,23 @@ class AuthService {
         debugPrint('Apple Sign-In (Native): Step 10 - Complete! Returning user: ${userCredential.user?.uid}');
         return userCredential.user;
       }
-    } catch (e) {
-      debugPrint('Apple Sign-In Error: $e');
+    } on FirebaseAuthException catch (firebaseError) {
+      debugPrint('Apple Sign-In Firebase Auth Exception:');
+      debugPrint('  - Error Code: ${firebaseError.code}');
+      debugPrint('  - Error Message: ${firebaseError.message}');
+      debugPrint('  - Full Error: ${firebaseError.toString()}');
+      lastAuthErrorMessage = 'Apple sign-in failed: ${firebaseError.message ?? firebaseError.code}';
+      return null;
+    } on SignInWithAppleAuthorizationException catch (appleError) {
+      debugPrint('Apple Sign-In Authorization Exception:');
+      debugPrint('  - Error Code: ${appleError.code}');
+      debugPrint('  - Error Message: ${appleError.message}');
+      debugPrint('  - Full Error: ${appleError.toString()}');
+      lastAuthErrorMessage = 'Apple authorization failed: ${appleError.message}';
+      return null;
+    } catch (e, stackTrace) {
+      debugPrint('Apple Sign-In General Error: $e');
+      debugPrint('Stack Trace: $stackTrace');
       lastAuthErrorMessage = 'Apple sign-in failed: $e';
       return null;
     }
