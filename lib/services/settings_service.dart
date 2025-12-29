@@ -16,9 +16,6 @@ class SettingsService {
   bool _orderUpdates = true;
   bool _marketing = false;
 
-  // Track if settings have been loaded
-  bool _initialized = false;
-
   // Getters
   String get currency => _currency;
   double get pricePerHour => _pricePerHour;
@@ -28,9 +25,8 @@ class SettingsService {
   bool get marketing => _marketing;
 
   /// Load settings from SharedPreferences
+  /// This will reload settings every time it's called to ensure persistence across login sessions
   Future<void> loadSettings() async {
-    if (_initialized) return; // Only load once
-    
     try {
       final prefs = await SharedPreferences.getInstance();
       _currency = prefs.getString('settings_currency') ?? 'USD';
@@ -40,7 +36,6 @@ class SettingsService {
       _orderUpdates = prefs.getBool('settings_order_updates') ?? true;
       _marketing = prefs.getBool('settings_marketing') ?? false;
       
-      _initialized = true;
       debugPrint('SettingsService: Loaded settings - Currency: $_currency, Price/hr: $_pricePerHour');
     } catch (e) {
       debugPrint('SettingsService: Error loading settings: $e');
