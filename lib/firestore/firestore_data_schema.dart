@@ -8,6 +8,7 @@ class FirestoreCollections {
   static const String shoppingLists = 'shopping_lists';
   static const String orders = 'orders';
   static const String quotes = 'quotes';
+  static const String reminders = 'reminders';
   static const String timerRecordings = 'timer_recordings';
   static const String supportIssues = 'support_issues';
   // Used by Firebase Trigger Email extension

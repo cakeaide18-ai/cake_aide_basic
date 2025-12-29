@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:cake_aide_basic/screens/reminders/reminders_screen.dart';
+import 'package:cake_aide_basic/models/reminder.dart';
+import 'package:cake_aide_basic/repositories/reminder_repository.dart';
 
 class AddReminderScreen extends StatefulWidget {
   const AddReminderScreen({super.key});
@@ -13,6 +14,7 @@ class _AddReminderScreenState extends State<AddReminderScreen> {
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _notesController = TextEditingController();
+  final ReminderRepository _repository = ReminderRepository();
 
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _selectedTime = TimeOfDay.now();
@@ -74,7 +76,7 @@ class _AddReminderScreenState extends State<AddReminderScreen> {
     }
   }
 
-  void _saveReminder() {
+  Future<void> _saveReminder() async {
     if (_formKey.currentState!.validate()) {
       ReminderPriority priority;
       switch (_selectedPriority) {
@@ -91,23 +93,50 @@ class _AddReminderScreenState extends State<AddReminderScreen> {
           priority = ReminderPriority.medium;
       }
 
-      final newReminder = ReminderItem(
+      // Combine date and time
+      final scheduledDateTime = DateTime(
+        _selectedDate.year,
+        _selectedDate.month,
+        _selectedDate.day,
+        _selectedTime.hour,
+        _selectedTime.minute,
+      );
+
+      final now = DateTime.now();
+      final newReminder = Reminder(
+        id: '', // Will be set by Firestore
         title: _nameController.text,
         description: _descriptionController.text,
-        time: '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}, ${_selectedTime.format(context)}',
+        scheduledTime: scheduledDateTime,
         isCompleted: false,
         priority: priority,
         notes: _notesController.text,
+        createdAt: now,
+        updatedAt: now,
       );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Reminder saved successfully!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      
-      Navigator.pop(context, newReminder);
+      try {
+        await _repository.add(newReminder);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Reminder saved successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pop(context);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error saving reminder: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
   }
 

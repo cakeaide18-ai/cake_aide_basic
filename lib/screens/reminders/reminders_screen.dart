@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cake_aide_basic/screens/reminders/add_reminder_screen.dart';
 import 'package:cake_aide_basic/screens/reminders/edit_reminder_screen.dart';
+import 'package:cake_aide_basic/models/reminder.dart';
+import 'package:cake_aide_basic/repositories/reminder_repository.dart';
 
 class RemindersScreen extends StatefulWidget {
   const RemindersScreen({super.key});
@@ -10,15 +12,9 @@ class RemindersScreen extends StatefulWidget {
 }
 
 class _RemindersScreenState extends State<RemindersScreen> {
-  final List<ReminderItem> _reminders = [];
+  final ReminderRepository _repository = ReminderRepository();
 
-  void _updateReminder(int index, ReminderItem updatedReminder) {
-    setState(() {
-      _reminders[index] = updatedReminder;
-    });
-  }
-
-  void _deleteReminder(int index) {
+  void _deleteReminder(String id) async {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -36,17 +32,29 @@ class _RemindersScreenState extends State<RemindersScreen> {
               ),
             ),
             TextButton(
-              onPressed: () {
-                setState(() {
-                  _reminders.removeAt(index);
-                });
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Reminder deleted successfully!'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
+              onPressed: () async {
+                try {
+                  await _repository.delete(id);
+                  if (mounted) {
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Reminder deleted successfully!'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error deleting reminder: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
               },
               child: const Text(
                 'Delete',
@@ -116,51 +124,73 @@ class _RemindersScreenState extends State<RemindersScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: _reminders.isEmpty
-          ? _buildEmptyState()
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _reminders.length,
-              itemBuilder: (context, index) {
-                final reminder = _reminders[index];
-                return ReminderCard(
-                  reminder: reminder,
-                  index: index,
-                  onToggle: () {
-                    setState(() {
-                      reminder.isCompleted = !reminder.isCompleted;
-                    });
-                  },
-                  onEdit: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => EditReminderScreen(
-                          reminder: reminder,
-                          index: index,
-                          onUpdate: _updateReminder,
-                        ),
-                      ),
+      body: StreamBuilder<List<Reminder>>(
+        stream: _repository.getRemindersStream(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          
+          if (snapshot.hasError) {
+            return Center(
+              child: Text('Error: ${snapshot.error}'),
+            );
+          }
+          
+          final reminders = snapshot.data ?? [];
+          
+          if (reminders.isEmpty) {
+            return _buildEmptyState();
+          }
+          
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: reminders.length,
+            itemBuilder: (context, index) {
+              final reminder = reminders[index];
+              return ReminderCard(
+                reminder: reminder,
+                onToggle: () async {
+                  try {
+                    await _repository.toggleCompletion(
+                      reminder.id,
+                      reminder.isCompleted,
                     );
-                  },
-                  onDelete: () => _deleteReminder(index),
-                );
-              },
-            ),
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error updating reminder: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                },
+                onEdit: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EditReminderScreen(
+                        reminder: reminder,
+                      ),
+                    ),
+                  );
+                },
+                onDelete: () => _deleteReminder(reminder.id),
+              );
+            },
+          );
+        },
+      ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final result = await Navigator.push(
+        onPressed: () {
+          Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => const AddReminderScreen(),
             ),
           );
-          
-          if (result != null && result is ReminderItem) {
-            setState(() {
-              _reminders.add(result);
-            });
-          }
         },
         backgroundColor: Theme.of(context).colorScheme.primary,
         child: const Icon(Icons.add, color: Colors.white),
@@ -169,29 +199,8 @@ class _RemindersScreenState extends State<RemindersScreen> {
   }
 }
 
-enum ReminderPriority { low, medium, high }
-
-class ReminderItem {
-  String title;
-  String description;
-  String time;
-  bool isCompleted;
-  ReminderPriority priority;
-  String notes;
-
-  ReminderItem({
-    required this.title,
-    required this.description,
-    required this.time,
-    required this.isCompleted,
-    required this.priority,
-    required this.notes,
-  });
-}
-
 class ReminderCard extends StatelessWidget {
-  final ReminderItem reminder;
-  final int index;
+  final Reminder reminder;
   final VoidCallback onToggle;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
@@ -199,7 +208,6 @@ class ReminderCard extends StatelessWidget {
   const ReminderCard({
     super.key,
     required this.reminder,
-    required this.index,
     required this.onToggle,
     required this.onEdit,
     required this.onDelete,
@@ -214,6 +222,15 @@ class ReminderCard extends StatelessWidget {
       case ReminderPriority.low:
         return Colors.green;
     }
+  }
+  
+  String _formatTime(DateTime time) {
+    final hour = time.hour % 12 == 0 ? 12 : time.hour % 12;
+    final minute = time.minute.toString().padLeft(2, '0');
+    final period = time.hour >= 12 ? 'PM' : 'AM';
+    final month = time.month.toString().padLeft(2, '0');
+    final day = time.day.toString().padLeft(2, '0');
+    return '${time.year}-$month-$day $hour:$minute $period';
   }
 
   @override
@@ -290,7 +307,7 @@ class ReminderCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  reminder.time,
+                  _formatTime(reminder.scheduledTime),
                   style: TextStyle(
                     fontSize: 12,
                     color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),

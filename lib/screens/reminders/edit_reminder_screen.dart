@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:cake_aide_basic/screens/reminders/reminders_screen.dart';
+import 'package:cake_aide_basic/models/reminder.dart';
+import 'package:cake_aide_basic/repositories/reminder_repository.dart';
 
 class EditReminderScreen extends StatefulWidget {
-  final ReminderItem reminder;
-  final int index;
-  final Function(int, ReminderItem) onUpdate;
+  final Reminder reminder;
 
   const EditReminderScreen({
     super.key,
     required this.reminder,
-    required this.index,
-    required this.onUpdate,
   });
 
   @override
@@ -22,9 +19,10 @@ class _EditReminderScreenState extends State<EditReminderScreen> {
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
   late final TextEditingController _notesController;
+  final ReminderRepository _repository = ReminderRepository();
 
-  DateTime _selectedDate = DateTime.now();
-  TimeOfDay _selectedTime = TimeOfDay.now();
+  late DateTime _selectedDate;
+  late TimeOfDay _selectedTime;
   late String _selectedPriority;
 
   @override
@@ -34,8 +32,12 @@ class _EditReminderScreenState extends State<EditReminderScreen> {
     _descriptionController = TextEditingController(text: widget.reminder.description);
     _notesController = TextEditingController(text: widget.reminder.notes);
     
-    // Parse the time from the reminder
-    _parseTimeFromReminder();
+    // Parse the DateTime from the reminder
+    _selectedDate = widget.reminder.scheduledTime;
+    _selectedTime = TimeOfDay(
+      hour: widget.reminder.scheduledTime.hour,
+      minute: widget.reminder.scheduledTime.minute,
+    );
     
     // Set priority
     switch (widget.reminder.priority) {
@@ -49,13 +51,6 @@ class _EditReminderScreenState extends State<EditReminderScreen> {
         _selectedPriority = 'Low';
         break;
     }
-  }
-
-  void _parseTimeFromReminder() {
-    // For simplicity, we'll use current date/time as default
-    // In a real app, you'd store and parse the actual DateTime
-    _selectedDate = DateTime.now();
-    _selectedTime = TimeOfDay.now();
   }
 
   @override
@@ -114,7 +109,7 @@ class _EditReminderScreenState extends State<EditReminderScreen> {
     }
   }
 
-  void _updateReminder() {
+  Future<void> _updateReminder() async {
     if (_formKey.currentState!.validate()) {
       ReminderPriority priority;
       switch (_selectedPriority) {
@@ -131,24 +126,46 @@ class _EditReminderScreenState extends State<EditReminderScreen> {
           priority = ReminderPriority.medium;
       }
 
-      final updatedReminder = ReminderItem(
-        title: _nameController.text,
-        description: _descriptionController.text,
-        time: '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}, ${_selectedTime.format(context)}',
-        isCompleted: widget.reminder.isCompleted,
-        priority: priority,
-        notes: _notesController.text,
+      // Combine date and time
+      final scheduledDateTime = DateTime(
+        _selectedDate.year,
+        _selectedDate.month,
+        _selectedDate.day,
+        _selectedTime.hour,
+        _selectedTime.minute,
       );
 
-      widget.onUpdate(widget.index, updatedReminder);
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Reminder updated successfully!'),
-          backgroundColor: Colors.green,
-        ),
+      final updatedReminder = widget.reminder.copyWith(
+        title: _nameController.text,
+        description: _descriptionController.text,
+        scheduledTime: scheduledDateTime,
+        priority: priority,
+        notes: _notesController.text,
+        updatedAt: DateTime.now(),
       );
-      Navigator.pop(context);
+
+      try {
+        await _repository.update(widget.reminder.id, updatedReminder);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Reminder updated successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pop(context);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error updating reminder: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
   }
 
