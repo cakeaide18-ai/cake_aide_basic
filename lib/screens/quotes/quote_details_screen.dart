@@ -55,15 +55,15 @@ $recipesText
 $suppliesText
 
 📊 COST BREAKDOWN:
-• Ingredients: ${_settingsService.getCurrencySymbol()}${_quote.totalIngredientCost.toStringAsFixed(2)}
-• Supplies: ${_settingsService.getCurrencySymbol()}${_quote.totalSupplyCost.toStringAsFixed(2)}
-• Labor (${_quote.timeRequired} hours): ${_settingsService.getCurrencySymbol()}${_quote.laborCost.toStringAsFixed(2)}
+• Ingredients: ${_quote.currencySymbol}${_quote.totalIngredientCost.toStringAsFixed(2)}
+• Supplies: ${_quote.currencySymbol}${_quote.totalSupplyCost.toStringAsFixed(2)}
+• Labor (${_quote.timeRequired} hours): ${_quote.currencySymbol}${_quote.laborCost.toStringAsFixed(2)}
 
-Subtotal: ${_settingsService.getCurrencySymbol()}${_quote.baseCost.toStringAsFixed(2)}
-Margin (${_quote.marginPercentage}%): ${_settingsService.getCurrencySymbol()}${_quote.marginAmount.toStringAsFixed(2)}
-Delivery: ${_settingsService.getCurrencySymbol()}${_quote.deliveryCost.toStringAsFixed(2)}
+Subtotal: ${_quote.currencySymbol}${_quote.baseCost.toStringAsFixed(2)}
+Margin (${_quote.marginPercentage}%): ${_quote.currencySymbol}${_quote.marginAmount.toStringAsFixed(2)}
+Delivery: ${_quote.currencySymbol}${_quote.deliveryCost.toStringAsFixed(2)}
 
-💰 TOTAL: ${_settingsService.getCurrencySymbol()}${_quote.totalCost.toStringAsFixed(2)}
+💰 TOTAL: ${_quote.currencySymbol}${_quote.totalCost.toStringAsFixed(2)}
 
 Generated with CakeAide Pro 🧁
     ''';
@@ -219,7 +219,7 @@ Generated with CakeAide Pro 🧁
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        'Total: ${_settingsService.getCurrencySymbol()}${_quote.totalCost.toStringAsFixed(2)}',
+                        'Total: ${_quote.currencySymbol}${_quote.totalCost.toStringAsFixed(2)}',
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -302,7 +302,7 @@ Generated with CakeAide Pro 🧁
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         subtitle: Text(
-                          'Quantity: x${quoteRecipe.quantity} • Cost: ${_settingsService.getCurrencySymbol()}${ingredientCost.toStringAsFixed(2)} • Serves: ${quoteRecipe.recipe.cakeSizePortions}',
+                          'Quantity: x${quoteRecipe.quantity} • Cost: ${_quote.currencySymbol}${ingredientCost.toStringAsFixed(2)} • Serves: ${quoteRecipe.recipe.cakeSizePortions}',
                         ),
                         children: [
                           Padding(
@@ -339,7 +339,7 @@ Generated with CakeAide Pro 🧁
                                         ),
                                         const SizedBox(width: 8),
                                         Text(
-                                          '${_settingsService.getCurrencySymbol()}${totalCost.toStringAsFixed(2)}',
+                                          '${_quote.currencySymbol}${totalCost.toStringAsFixed(2)}',
                                           style: const TextStyle(
                                             fontWeight: FontWeight.w500,
                                             fontSize: 14,
@@ -404,7 +404,7 @@ Generated with CakeAide Pro 🧁
                             ),
                           ),
                           Text(
-                            '${_settingsService.getCurrencySymbol()}${cost.toStringAsFixed(2)}',
+                            '${_quote.currencySymbol}${cost.toStringAsFixed(2)}',
                             style: const TextStyle(
                               fontWeight: FontWeight.w500,
                             ),
@@ -427,7 +427,7 @@ Generated with CakeAide Pro 🧁
                 _buildDetailRow('Total Supplies', '${_quote.supplies.length} item${_quote.supplies.length != 1 ? 's' : ''}'),
                 _buildDetailRow('Labor Time', '${_quote.timeRequired} hours'),
                 _buildDetailRow('Profit Margin', '${_quote.marginPercentage}%'),
-                _buildDetailRow('Delivery Cost', '${_settingsService.getCurrencySymbol()}${_quote.deliveryCost.toStringAsFixed(2)}'),
+                _buildDetailRow('Delivery Cost', '${_quote.currencySymbol}${_quote.deliveryCost.toStringAsFixed(2)}'),
                 _buildDetailRow('Created', _formatDate(_quote.createdAt)),
               ],
             ),
@@ -538,7 +538,7 @@ Generated with CakeAide Pro 🧁
             ),
           ),
           Text(
-            '${_settingsService.getCurrencySymbol()}${amount.toStringAsFixed(2)}',
+            '${_quote.currencySymbol}${amount.toStringAsFixed(2)}',
             style: TextStyle(
               fontSize: isTotal ? 18 : 14,
               fontWeight: isTotal || isBold ? FontWeight.bold : FontWeight.normal,

@@ -53,6 +53,7 @@ class Quote {
   final double timeRequired; // in hours
   final double marginPercentage;
   final double deliveryCost;
+  final String currency; // Store the currency used when quote was created
   final String? imagePath;
   final DateTime createdAt;
 
@@ -65,6 +66,7 @@ class Quote {
     required this.timeRequired,
     required this.marginPercentage,
     required this.deliveryCost,
+    required this.currency, // Required field
     this.imagePath,
     required this.createdAt,
   });
@@ -95,8 +97,40 @@ class Quote {
   double get marginAmount => baseCost * (marginPercentage / 100);
   double get totalCost => baseCost + marginAmount + deliveryCost;
 
+  // Get currency symbol for this quote
+  String get currencySymbol {
+    switch (currency) {
+      case 'USD':
+      case 'CAD':
+      case 'AUD':
+      case 'NZD':
+      case 'SGD':
+      case 'HKD':
+        return '\$';
+      case 'EUR':
+        return '€';
+      case 'GBP':
+        return '£';
+      case 'JPY':
+      case 'CNY':
+        return '¥';
+      case 'CHF':
+        return 'CHF';
+      case 'INR':
+        return '₹';
+      case 'KRW':
+        return '₩';
+      case 'BRL':
+        return 'R\$';
+      case 'RUB':
+        return '₽';
+      default:
+        return '\$';
+    }
+  }
+
   Map<String, dynamic> toJson() => {
-    'id': id,
+    // Note: 'id' is NOT included - Firestore document ID is stored separately
     'name': name,
     'description': description,
     'recipes': recipes.map((e) => e.toJson()).toList(),
@@ -104,14 +138,15 @@ class Quote {
     'timeRequired': timeRequired,
     'marginPercentage': marginPercentage,
     'deliveryCost': deliveryCost,
+    'currency': currency,
     'imagePath': imagePath,
     'createdAt': createdAt.toIso8601String(),
   };
 
   factory Quote.fromJson(Map<String, dynamic> json) => Quote(
-    id: json['id'],
-    name: json['name'],
-    description: json['description'],
+    id: json['id'] ?? '',
+    name: json['name'] ?? '',
+    description: json['description'] ?? '',
     recipes: (json['recipes'] as List?)
         ?.map((e) => QuoteRecipe.fromJson(e))
         .toList() ?? [],
@@ -121,7 +156,10 @@ class Quote {
   timeRequired: parseDouble(json['timeRequired'], 0.0),
   marginPercentage: parseDouble(json['marginPercentage'], 0.0),
   deliveryCost: parseDouble(json['deliveryCost'], 0.0),
+    currency: json['currency'] ?? 'USD',
     imagePath: json['imagePath'],
-    createdAt: DateTime.parse(json['createdAt']),
+    createdAt: json['createdAt'] != null 
+        ? DateTime.parse(json['createdAt'])
+        : DateTime.now(),
   );
 }

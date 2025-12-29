@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:cake_aide_basic/services/data_service.dart';
+import 'package:cake_aide_basic/models/quote.dart';
+import 'package:cake_aide_basic/repositories/quote_repository.dart';
 import 'package:cake_aide_basic/screens/quotes/add_quote_screen.dart';
 import 'package:cake_aide_basic/screens/quotes/quote_details_screen.dart';
 import 'package:cake_aide_basic/theme.dart';
@@ -13,12 +14,10 @@ class QuotesScreen extends StatefulWidget {
 }
 
 class _QuotesScreenState extends State<QuotesScreen> {
-  final DataService _dataService = DataService();
+  final QuoteRepository _quoteRepository = QuoteRepository();
 
   @override
   Widget build(BuildContext context) {
-    final quotes = _dataService.quotes;
-
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
@@ -30,74 +29,98 @@ class _QuotesScreenState extends State<QuotesScreen> {
         ),
         foregroundColor: Colors.white,
       ),
-      body: quotes.isEmpty
-          ? _buildEmptyState()
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: quotes.length,
-              itemBuilder: (context, index) {
-                final quote = quotes[index];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  child: InkWell(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => QuoteDetailsScreen(quote: quote),
-                        ),
-                      ).then((_) => setState(() {}));
-                    },
-                    borderRadius: BorderRadius.circular(12),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                            child: const Center(
-                              child: QuoteIcon(size: 24),
-                            ),
+      body: StreamBuilder<List<Quote>>(
+        stream: _quoteRepository.getQuotesStream(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text('Error loading quotes: ${snapshot.error}'),
+                ],
+              ),
+            );
+          }
+
+          final quotes = snapshot.data ?? [];
+
+          if (quotes.isEmpty) {
+            return _buildEmptyState();
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: quotes.length,
+            itemBuilder: (context, index) {
+              final quote = quotes[index];
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => QuoteDetailsScreen(quote: quote),
+                      ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(24),
                           ),
-                          const SizedBox(width: 16),
-                          
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  quote.name,
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                          child: const Center(
+                            child: QuoteIcon(size: 24),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                quote.name,
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  quote.description.length > 40 
-                                    ? '${quote.description.substring(0, 40)}...' 
-                                    : quote.description,
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                                  ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                quote.description.length > 40 
+                                  ? '${quote.description.substring(0, 40)}...' 
+                                  : quote.description,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                                 ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    Text(
-                                      '\$${quote.totalCost.toStringAsFixed(2)}',
-                                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                        color: Theme.of(context).colorScheme.primary,
-                                        fontWeight: FontWeight.w700,
-                                      ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Text(
+                                    '${quote.currencySymbol}${quote.totalCost.toStringAsFixed(2)}',
+                                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                      color: Theme.of(context).colorScheme.primary,
+                                      fontWeight: FontWeight.w700,
                                     ),
-                                    const Spacer(),
-                                    if (quote.recipes.isNotEmpty)
+                                  ),
+                                  const Spacer(),
+                                  if (quote.recipes.isNotEmpty)
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                         decoration: BoxDecoration(
@@ -128,7 +151,9 @@ class _QuotesScreenState extends State<QuotesScreen> {
                   ),
                 );
               },
-            ),
+            );
+        },
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
@@ -136,7 +161,7 @@ class _QuotesScreenState extends State<QuotesScreen> {
             MaterialPageRoute(
               builder: (context) => const AddQuoteScreen(),
             ),
-          ).then((_) => setState(() {}));
+          );
         },
         backgroundColor: Theme.of(context).colorScheme.primary,
         child: const Icon(Icons.add, color: Colors.white),

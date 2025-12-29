@@ -7,6 +7,7 @@ import 'package:cake_aide_basic/services/data_service.dart';
 import 'package:cake_aide_basic/services/settings_service.dart';
 import 'package:cake_aide_basic/repositories/recipe_repository.dart';
 import 'package:cake_aide_basic/repositories/supply_repository.dart';
+import 'package:cake_aide_basic/repositories/quote_repository.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:cake_aide_basic/theme.dart';
 
@@ -25,6 +26,7 @@ class _AddQuoteScreenState extends State<AddQuoteScreen> {
   final SettingsService _settingsService = SettingsService();
   final RecipeRepository _recipeRepository = RecipeRepository();
   final SupplyRepository _supplyRepository = SupplyRepository();
+  final QuoteRepository _quoteRepository = QuoteRepository();
   
   // Form controllers
   final _nameController = TextEditingController();
@@ -335,34 +337,48 @@ Delivery: ${_settingsService.getCurrencySymbol()}${_deliveryCost.toStringAsFixed
     ''';
   }
   
-  void _saveQuote() {
+  void _saveQuote() async {
     if (!_formKey.currentState!.validate()) return;
     
-    final quote = Quote(
-      id: widget.quote?.id ?? _dataService.generateId(),
-      name: _nameController.text,
-      description: _descriptionController.text,
-      recipes: _selectedRecipes,
-      supplies: _selectedSupplies,
-      timeRequired: double.tryParse(_timeRequiredController.text) ?? 0.0,
-      marginPercentage: double.tryParse(_marginController.text) ?? 0.0,
-      deliveryCost: double.tryParse(_deliveryController.text) ?? 0.0,
-      createdAt: widget.quote?.createdAt ?? DateTime.now(),
-    );
-    
-    if (widget.quote != null) {
-      _dataService.updateQuote(widget.quote!.id, quote);
-    } else {
-      _dataService.addQuote(quote);
+    try {
+      final quote = Quote(
+        id: widget.quote?.id ?? '',
+        name: _nameController.text,
+        description: _descriptionController.text,
+        recipes: _selectedRecipes,
+        supplies: _selectedSupplies,
+        timeRequired: double.tryParse(_timeRequiredController.text) ?? 0.0,
+        marginPercentage: double.tryParse(_marginController.text) ?? 0.0,
+        deliveryCost: double.tryParse(_deliveryController.text) ?? 0.0,
+        currency: _settingsService.currency, // Save the current currency
+        createdAt: widget.quote?.createdAt ?? DateTime.now(),
+      );
+      
+      if (widget.quote != null) {
+        await _quoteRepository.update(widget.quote!.id, quote);
+      } else {
+        await _quoteRepository.add(quote);
+      }
+      
+      if (mounted) {
+        Navigator.pop(context, true); // Pass true to indicate success
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Quote ${widget.quote != null ? 'updated' : 'created'} successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving quote: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
-    
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Quote ${widget.quote != null ? 'updated' : 'created'} successfully!'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-      ),
-    );
   }
   
   @override
