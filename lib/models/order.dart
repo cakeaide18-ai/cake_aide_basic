@@ -100,16 +100,14 @@ class Order {
   }
 
   Map<String, dynamic> toMap() {
-    return {
+    // Build the map and explicitly filter out null values and id field
+    final map = <String, dynamic>{
       // Note: 'id' is NOT included - Firestore document ID is stored separately
       'name': name,
       'customerName': customerName,
       'customerPhone': customerPhone,
       'customerEmail': customerEmail,
       'status': status.name,
-      'orderDate': orderDate != null ? Timestamp.fromDate(orderDate!) : null,
-      'deliveryDate': deliveryDate != null ? Timestamp.fromDate(deliveryDate!) : null,
-      'deliveryTime': deliveryTime != null ? '${deliveryTime!.hour}:${deliveryTime!.minute}' : null,
       'notes': notes,
       'cakeDetails': cakeDetails,
       'servings': servings,
@@ -119,6 +117,19 @@ class Order {
       'imageUrls': imageUrls,
       // createdAt and updatedAt are handled by FirebaseRepository
     };
+    
+    // Add optional date/time fields only if they're not null
+    if (orderDate != null) {
+      map['orderDate'] = Timestamp.fromDate(orderDate!);
+    }
+    if (deliveryDate != null) {
+      map['deliveryDate'] = Timestamp.fromDate(deliveryDate!);
+    }
+    if (deliveryTime != null) {
+      map['deliveryTime'] = '${deliveryTime!.hour.toString().padLeft(2, '0')}:${deliveryTime!.minute.toString().padLeft(2, '0')}';
+    }
+    
+    return map;
   }
 
   Map<String, dynamic> toJson() => toMap();
