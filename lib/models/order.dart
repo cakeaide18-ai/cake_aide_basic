@@ -1,6 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:cake_aide_basic/utils/json_utils.dart';
 
 enum OrderStatus {
   pending,
@@ -20,41 +18,8 @@ enum OrderStatus {
         return 'Cancelled';
     }
   }
-  
-  /// Convert enum to Firestore-compatible string value
-  String toFirestoreValue() {
-    switch (this) {
-      case OrderStatus.pending:
-        return 'pending';
-      case OrderStatus.inProgress:
-        return 'in_progress'; // Use snake_case for Firestore
-      case OrderStatus.completed:
-        return 'completed';
-      case OrderStatus.cancelled:
-        return 'cancelled';
-    }
-  }
-  
-  /// Parse Firestore string value to enum
-  static OrderStatus fromFirestoreValue(String value) {
-    switch (value.toLowerCase()) {
-      case 'pending':
-        return OrderStatus.pending;
-      case 'in_progress':
-      case 'inprogress':
-      case 'inProgress': // Handle legacy camelCase values
-        return OrderStatus.inProgress;
-      case 'completed':
-        return OrderStatus.completed;
-      case 'cancelled':
-        return OrderStatus.cancelled;
-      default:
-        return OrderStatus.pending;
-    }
-  }
 }
 
-@immutable
 class Order {
   final String id;
   final String name;
@@ -73,10 +38,10 @@ class Order {
   final String customDesignNotes;
   // Persisted image references for the order's photos. Can be URLs or base64 strings.
   final List<String> imageUrls;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
-  const Order({
+  Order({
     required this.id,
     required this.name,
     required this.customerName,
@@ -93,75 +58,64 @@ class Order {
     this.isCustomDesign = false,
     this.customDesignNotes = '',
     this.imageUrls = const [],
-    this.createdAt,
-    this.updatedAt,
+    required this.createdAt,
+    required this.updatedAt,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
     return Order(
-      id: parseString(json['id']),
-      name: parseString(json['name']),
-      customerName: parseString(json['customerName']),
-      customerPhone: parseString(json['customerPhone']),
-      customerEmail: parseString(json['customerEmail']),
-      status: OrderStatus.fromFirestoreValue(json['status'] ?? 'pending'),
-      orderDate: _parseDate(json['orderDate']),
-      deliveryDate: _parseDate(json['deliveryDate']),
-      deliveryTime: _parseTimeOfDay(json['deliveryTime']),
-      notes: parseString(json['notes']),
-      cakeDetails: parseString(json['cakeDetails']),
-      servings: parseInt(json['servings']),
-      price: parseDouble(json['price']),
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      customerName: json['customerName'] ?? '',
+      customerPhone: json['customerPhone'] ?? '',
+      customerEmail: json['customerEmail'] ?? '',
+      status: OrderStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+        orElse: () => OrderStatus.pending,
+      ),
+      orderDate: json['orderDate'] != null ? DateTime.parse(json['orderDate']) : null,
+      deliveryDate: json['deliveryDate'] != null ? DateTime.parse(json['deliveryDate']) : null,
+      deliveryTime: json['deliveryTime'] != null
+          ? TimeOfDay(
+              hour: int.parse(json['deliveryTime'].split(':')[0]),
+              minute: int.parse(json['deliveryTime'].split(':')[1]),
+            )
+          : null,
+      notes: json['notes'] ?? '',
+      cakeDetails: json['cakeDetails'] ?? '',
+      servings: json['servings'] ?? 0,
+      price: (json['price'] ?? 0.0).toDouble(),
       isCustomDesign: json['isCustomDesign'] ?? false,
-      customDesignNotes: parseString(json['customDesignNotes']),
+      customDesignNotes: json['customDesignNotes'] ?? '',
       imageUrls: List<String>.from(json['imageUrls'] ?? []),
-      createdAt: _parseDate(json['createdAt']),
-      updatedAt: _parseDate(json['updatedAt']),
+      createdAt: DateTime.parse(json['createdAt']),
+      updatedAt: DateTime.parse(json['updatedAt']),
     );
   }
 
-  factory Order.fromFirestore(Map<String, dynamic> map, {String? id}) {
-    final json = Map<String, dynamic>.from(map);
-    if (id != null && (json['id'] == null || json['id'] == '')) {
-      json['id'] = id;
-    }
-    return Order.fromJson(json);
-  }
 
-  Map<String, dynamic> toMap() {
-    // Build the map and explicitly filter out null values and id field
-    final map = <String, dynamic>{
-      // Note: 'id' is NOT included - Firestore document ID is stored separately
-      'name': name,
-      'customerName': customerName,
-      'customerPhone': customerPhone,
-      'customerEmail': customerEmail,
-      'status': status.toFirestoreValue(), // Use snake_case for consistency with queries
-      'notes': notes,
-      'cakeDetails': cakeDetails,
-      'servings': servings,
-      'price': price,
-      'isCustomDesign': isCustomDesign,
-      'customDesignNotes': customDesignNotes,
-      'imageUrls': imageUrls,
-      // createdAt and updatedAt are handled by FirebaseRepository
-    };
-    
-    // Add optional date/time fields only if they're not null
-    if (orderDate != null) {
-      map['orderDate'] = Timestamp.fromDate(orderDate!);
-    }
-    if (deliveryDate != null) {
-      map['deliveryDate'] = Timestamp.fromDate(deliveryDate!);
-    }
-    if (deliveryTime != null) {
-      map['deliveryTime'] = '${deliveryTime!.hour.toString().padLeft(2, '0')}:${deliveryTime!.minute.toString().padLeft(2, '0')}';
-    }
-    
-    return map;
-  }
-
-  Map<String, dynamic> toJson() => toMap();
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'customerName': customerName,
+        'customerPhone': customerPhone,
+        'customerEmail': customerEmail,
+        'status': status.name,
+        'orderDate': orderDate?.toIso8601String(),
+        'deliveryDate': deliveryDate?.toIso8601String(),
+        'deliveryTime': deliveryTime != null
+            ? '${deliveryTime!.hour}:${deliveryTime!.minute}'
+            : null,
+        'notes': notes,
+        'cakeDetails': cakeDetails,
+        'servings': servings,
+        'price': price,
+        'isCustomDesign': isCustomDesign,
+        'customDesignNotes': customDesignNotes,
+        'imageUrls': imageUrls,
+        'createdAt': createdAt.toIso8601String(),
+        'updatedAt': updatedAt.toIso8601String(),
+      };
 
   Order copyWith({
     String? name,
@@ -256,29 +210,3 @@ class Order {
   }
 }
 
-DateTime? _parseDate(dynamic date) {
-  if (date is Timestamp) {
-    return date.toDate();
-  }
-  if (date is String) {
-    return DateTime.tryParse(date);
-  }
-  if (date is DateTime) {
-    return date;
-  }
-  return null;
-}
-
-TimeOfDay? _parseTimeOfDay(String? time) {
-  if (time == null) {
-    return null;
-  }
-  final parts = time.split(':');
-  if (parts.length != 2) {
-    return null;
-  }
-  return TimeOfDay(
-    hour: int.tryParse(parts[0]) ?? 0,
-    minute: int.tryParse(parts[1]) ?? 0,
-  );
-}

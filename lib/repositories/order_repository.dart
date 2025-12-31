@@ -41,7 +41,7 @@ class OrderRepository extends FirebaseRepository<order_model.Order> {
     final startOfTomorrow = DateTime(today.year, today.month, today.day + 1);
     
     final queryRef = query()
-        .where(FirestoreFields.status, whereIn: ['pending', 'in_progress'])
+        .where(FirestoreFields.status, whereIn: ['pending', 'inProgress'])
         .where(FirestoreFields.deliveryDate, isGreaterThanOrEqualTo: Timestamp.fromDate(startOfTomorrow));
     
     return await getWithQuery(queryRef);
