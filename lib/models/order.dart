@@ -20,6 +20,38 @@ enum OrderStatus {
         return 'Cancelled';
     }
   }
+  
+  /// Convert enum to Firestore-compatible string value
+  String toFirestoreValue() {
+    switch (this) {
+      case OrderStatus.pending:
+        return 'pending';
+      case OrderStatus.inProgress:
+        return 'in_progress'; // Use snake_case for Firestore
+      case OrderStatus.completed:
+        return 'completed';
+      case OrderStatus.cancelled:
+        return 'cancelled';
+    }
+  }
+  
+  /// Parse Firestore string value to enum
+  static OrderStatus fromFirestoreValue(String value) {
+    switch (value.toLowerCase()) {
+      case 'pending':
+        return OrderStatus.pending;
+      case 'in_progress':
+      case 'inprogress':
+      case 'inProgress': // Handle legacy camelCase values
+        return OrderStatus.inProgress;
+      case 'completed':
+        return OrderStatus.completed;
+      case 'cancelled':
+        return OrderStatus.cancelled;
+      default:
+        return OrderStatus.pending;
+    }
+  }
 }
 
 @immutable
@@ -72,10 +104,7 @@ class Order {
       customerName: parseString(json['customerName']),
       customerPhone: parseString(json['customerPhone']),
       customerEmail: parseString(json['customerEmail']),
-      status: OrderStatus.values.firstWhere(
-        (e) => e.name == json['status'],
-        orElse: () => OrderStatus.pending,
-      ),
+      status: OrderStatus.fromFirestoreValue(json['status'] ?? 'pending'),
       orderDate: _parseDate(json['orderDate']),
       deliveryDate: _parseDate(json['deliveryDate']),
       deliveryTime: _parseTimeOfDay(json['deliveryTime']),
@@ -107,7 +136,7 @@ class Order {
       'customerName': customerName,
       'customerPhone': customerPhone,
       'customerEmail': customerEmail,
-      'status': status.name,
+      'status': status.toFirestoreValue(), // Use snake_case for consistency with queries
       'notes': notes,
       'cakeDetails': cakeDetails,
       'servings': servings,
