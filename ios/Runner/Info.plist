@@ -49,6 +49,10 @@
   <key>FLTEnableImpeller</key>
   <false/>
   
+  <!-- Export Compliance: App only uses standard HTTPS/TLS encryption (exempt) -->
+  <key>ITSAppUsesNonExemptEncryption</key>
+  <false/>
+  
   <!-- Local notifications permission (iOS 10+) -->
   <key>NSUserNotificationAlertStyle</key>
   <string>alert</string>
