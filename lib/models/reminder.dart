@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 enum ReminderPriority { 
   low, 
@@ -40,15 +40,15 @@ class Reminder {
 
   Map<String, dynamic> toJson() {
     return {
-      // Note: 'id' is NOT included - Firestore document ID is stored separately
+      'id': id,
       'title': title,
       'description': description,
-      'scheduledTime': Timestamp.fromDate(scheduledTime),
+      'scheduledTime': scheduledTime.toIso8601String(),
       'isCompleted': isCompleted,
       'priority': priority.toJson(),
       'notes': notes,
-      'createdAt': Timestamp.fromDate(createdAt),
-      'updatedAt': Timestamp.fromDate(updatedAt),
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
     };
   }
 
@@ -57,12 +57,12 @@ class Reminder {
       id: json['id'] ?? '',
       title: json['title'] ?? '',
       description: json['description'] ?? '',
-      scheduledTime: (json['scheduledTime'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      scheduledTime: json['scheduledTime'] != null ? DateTime.parse(json['scheduledTime']) : DateTime.now(),
       isCompleted: json['isCompleted'] ?? false,
       priority: ReminderPriority.fromJson(json['priority'] ?? 'medium'),
       notes: json['notes'] ?? '',
-      createdAt: (json['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      updatedAt: (json['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
+      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : DateTime.now(),
     );
   }
 

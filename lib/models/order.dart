@@ -1,4 +1,6 @@
+
 import 'package:flutter/material.dart';
+import 'package:collection/collection.dart';
 
 enum OrderStatus {
   pending,
@@ -160,26 +162,26 @@ class Order {
 
   @override
   bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other is Order &&
-            other.id == id &&
-            other.name == name &&
-            other.customerName == customerName &&
-            other.customerPhone == customerPhone &&
-            other.customerEmail == customerEmail &&
-            other.status == status &&
-            other.orderDate == orderDate &&
-            other.deliveryDate == deliveryDate &&
-            other.deliveryTime == deliveryTime &&
-            other.notes == notes &&
-            other.cakeDetails == cakeDetails &&
-            other.servings == servings &&
-            other.price == price &&
-            other.isCustomDesign == isCustomDesign &&
-            other.customDesignNotes == customDesignNotes &&
-            const ListEquality().equals(other.imageUrls, imageUrls) &&
-            other.createdAt == createdAt &&
-            other.updatedAt == updatedAt);
+  return identical(this, other) ||
+    (other is Order &&
+      other.id == id &&
+      other.name == name &&
+      other.customerName == customerName &&
+      other.customerPhone == customerPhone &&
+      other.customerEmail == customerEmail &&
+      other.status == status &&
+      other.orderDate == orderDate &&
+      other.deliveryDate == deliveryDate &&
+      other.deliveryTime == deliveryTime &&
+      other.notes == notes &&
+      other.cakeDetails == cakeDetails &&
+      other.servings == servings &&
+      other.price == price &&
+      other.isCustomDesign == isCustomDesign &&
+      other.customDesignNotes == customDesignNotes &&
+      ListEquality().equals(other.imageUrls, imageUrls) &&
+      other.createdAt == createdAt &&
+      other.updatedAt == updatedAt);
   }
 
   @override
@@ -199,7 +201,7 @@ class Order {
         price,
         isCustomDesign,
         customDesignNotes,
-        const ListEquality().hash(imageUrls),
+        ListEquality().hash(imageUrls),
         createdAt,
         updatedAt,
       );

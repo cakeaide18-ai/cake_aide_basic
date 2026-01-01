@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cake_aide_basic/repositories/user_profile_repository.dart';
+import 'package:cake_aide_basic/repositories/order_repository.dart';
 import 'package:cake_aide_basic/screens/ingredients/ingredients_screen.dart';
 import 'package:cake_aide_basic/screens/supplies/supplies_screen.dart';
 import 'package:cake_aide_basic/screens/recipes/recipes_screen.dart';
@@ -10,7 +11,6 @@ import 'package:cake_aide_basic/screens/shopping_list/shopping_list_screen.dart'
 import 'package:cake_aide_basic/screens/unit_converter/unit_converter_screen.dart';
 import 'package:cake_aide_basic/screens/orders/orders_screen.dart';
 import 'package:cake_aide_basic/screens/timer/timer_screen.dart';
-import 'package:cake_aide_basic/services/data_service.dart';
 import 'package:cake_aide_basic/models/order.dart';
 import 'package:cake_aide_basic/screens/reminders/reminders_screen.dart';
 import 'package:cake_aide_basic/screens/settings/settings_screen.dart';
@@ -31,6 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final PageController _pageController = PageController();
   final AuthStateManager _authManager = AuthStateManager();
   final TextEditingController _searchController = TextEditingController();
+  final OrderRepository _orderRepository = OrderRepository();
   int _currentIndex = 0;
   int _selectedOrderTab = 0;
   List<CategoryItem> _filteredCategories = [];
@@ -339,19 +340,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
 
-  @override
-  Widget build(BuildContext context) {
-    final dataService = DataService();
-    final orders = dataService.orders;
-    
-    // Filter orders based on selected tab
-    List<Order> filteredOrders;
-    String emptyStateMessage;
-    
-    switch (_selectedOrderTab) {
+  List<Order> _filterOrders(List<Order> orders, int tabIndex) {
+    switch (tabIndex) {
       case 0: // Today
         final today = DateTime.now();
-        filteredOrders = orders.where((order) {
+        return orders.where((order) {
           final deliveryDate = order.deliveryDate;
           if (deliveryDate == null) return false;
           return deliveryDate.year == today.year &&
@@ -359,32 +352,41 @@ class _HomeScreenState extends State<HomeScreen> {
                  deliveryDate.day == today.day &&
                  order.status != OrderStatus.completed;
         }).toList();
-        emptyStateMessage = 'No orders for today';
-        break;
         
       case 1: // Upcoming
         final today = DateTime.now();
-        filteredOrders = orders.where((order) {
+        return orders.where((order) {
           final deliveryDate = order.deliveryDate;
           if (deliveryDate == null) return false;
           return deliveryDate.isAfter(today) &&
                  order.status != OrderStatus.completed;
         }).toList();
-        emptyStateMessage = 'No upcoming orders';
-        break;
         
       case 2: // Completed
-        filteredOrders = orders.where((order) {
+        return orders.where((order) {
           return order.status == OrderStatus.completed;
         }).toList();
-        emptyStateMessage = 'No completed orders';
-        break;
         
       default:
-        filteredOrders = [];
-        emptyStateMessage = 'No orders';
+        return [];
     }
-    
+  }
+
+  String _getEmptyStateMessage(int tabIndex) {
+    switch (tabIndex) {
+      case 0:
+        return 'No orders for today';
+      case 1:
+        return 'No upcoming orders';
+      case 2:
+        return 'No completed orders';
+      default:
+        return 'No orders';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Get user profile data
     final userProfile = _authManager.userProfile;
     // Fallback to Firebase Auth displayName if Supabase profile not loaded
@@ -395,28 +397,35 @@ class _HomeScreenState extends State<HomeScreen> {
                      'User';
     final profileImageUrl = userProfile?.profileImageUrl;
     
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              // Header with gradient background
-              Container(
-                decoration: BoxDecoration(
-                  gradient: GradientDecorations.primaryGradient,
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(24),
-                    bottomRight: Radius.circular(24),
-                  ),
-                ),
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
+    return StreamBuilder<List<Order>>(
+      stream: _orderRepository.getStream(),
+      builder: (context, snapshot) {
+        final orders = snapshot.data ?? [];
+        final filteredOrders = _filterOrders(orders, _selectedOrderTab);
+        final emptyStateMessage = _getEmptyStateMessage(_selectedOrderTab);
+        
+        return Scaffold(
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          body: SafeArea(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  // Header with gradient background
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: GradientDecorations.primaryGradient,
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(24),
+                        bottomRight: Radius.circular(24),
+                      ),
+                    ),
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(color: Colors.white, width: 2),
                       ),
@@ -809,6 +818,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
+    );
+      },
     );
   }
 }
