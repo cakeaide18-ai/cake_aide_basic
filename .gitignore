@@ -45,3 +45,4 @@ web/build/
 # Environment files
 .env
 .env.*
+android/key.properties
