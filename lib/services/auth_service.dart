@@ -2,7 +2,6 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -42,25 +41,9 @@ class AuthService {
         }
         return user;
       } else {
-        // Use GoogleSignIn package for native platforms (more reliable on Android)
-        lastAuthErrorMessage = null;
-        final GoogleSignIn googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
-        final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-        
-        if (googleUser == null) {
-          // User cancelled the sign-in
-          debugPrint('Google Sign-In (Native): User cancelled sign-in');
-          lastAuthErrorMessage = 'Sign-in was cancelled.';
-          return null;
-        }
-        
-        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-        final credential = GoogleAuthProvider.credential(
-          accessToken: googleAuth.accessToken,
-          idToken: googleAuth.idToken,
-        );
-        
-        final UserCredential userCredential = await _auth.signInWithCredential(credential);
+        // Use Firebase signInWithProvider for native platforms
+        debugPrint('Google Sign-In (Native): Starting sign-in with provider');
+        final UserCredential userCredential = await _auth.signInWithProvider(googleProvider);
         final user = userCredential.user;
         if (user != null) {
           try {

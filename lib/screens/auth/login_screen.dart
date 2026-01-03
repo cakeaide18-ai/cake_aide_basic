@@ -421,36 +421,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 // Social Login Buttons
                 Column(
                   children: [
-                    // Apple Sign In (iOS only)
-                    FutureBuilder<bool>(
-                      future: AuthService.isAppleSignInAvailable(),
-                      builder: (context, snapshot) {
-                        if (snapshot.data == true) {
-                          return Column(
-                            children: [
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton.icon(
-                                  onPressed: _loginWithApple,
-                                  icon: SocialLoginIcons.appleIcon(size: 18, color: Colors.white),
-                                  label: const Text('Continue with Apple'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.black,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                            ],
-                          );
-                        }
-                        return const SizedBox.shrink();
-                      },
-                    ),
+                    // Apple Sign In temporarily disabled - will be added in future release
+                    // TODO: Re-enable Apple Sign-In once Apple Developer configuration is complete
+                    
                     // Google Sign In
                     SizedBox(
                       width: double.infinity,
