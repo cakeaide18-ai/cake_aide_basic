@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -41,7 +42,25 @@ class AuthService {
         }
         return user;
       } else {
-        final UserCredential userCredential = await _auth.signInWithProvider(googleProvider);
+        // Use GoogleSignIn package for native platforms (more reliable on Android)
+        lastAuthErrorMessage = null;
+        final GoogleSignIn googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
+        final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+        
+        if (googleUser == null) {
+          // User cancelled the sign-in
+          debugPrint('Google Sign-In (Native): User cancelled sign-in');
+          lastAuthErrorMessage = 'Sign-in was cancelled.';
+          return null;
+        }
+        
+        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+        
+        final UserCredential userCredential = await _auth.signInWithCredential(credential);
         final user = userCredential.user;
         if (user != null) {
           try {
@@ -374,6 +393,38 @@ class AuthService {
       debugPrint('SignIn Error: $e');
       lastAuthErrorMessage = 'Sign in failed: $e';
       return null;
+    }
+  }
+
+  /// Send password reset email
+  static Future<bool> sendPasswordResetEmail(String email) async {
+    try {
+      lastAuthErrorMessage = null;
+      debugPrint('PasswordReset: Sending reset email to $email');
+      
+      await _auth.sendPasswordResetEmail(email: email);
+      
+      debugPrint('PasswordReset: Successfully sent reset email to $email');
+      return true;
+    } on FirebaseAuthException catch (e) {
+      debugPrint('PasswordReset Error: ${e.code} - ${e.message}');
+      
+      // Provide user-friendly error messages
+      switch (e.code) {
+        case 'user-not-found':
+          lastAuthErrorMessage = 'No account found with this email.';
+          break;
+        case 'invalid-email':
+          lastAuthErrorMessage = 'Invalid email address.';
+          break;
+        default:
+          lastAuthErrorMessage = e.message ?? 'Failed to send reset email. Please try again.';
+      }
+      return false;
+    } catch (e) {
+      debugPrint('PasswordReset Error: $e');
+      lastAuthErrorMessage = 'Failed to send reset email: $e';
+      return false;
     }
   }
 
