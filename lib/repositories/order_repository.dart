@@ -2,6 +2,7 @@ import 'package:cake_aide_basic/models/order.dart' as order_model;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cake_aide_basic/repositories/firebase_repository.dart';
 import 'package:cake_aide_basic/firestore/firestore_data_schema.dart';
+import 'package:flutter/foundation.dart';
 
 class OrderRepository extends FirebaseRepository<order_model.Order> {
   OrderRepository() : super(
@@ -9,6 +10,35 @@ class OrderRepository extends FirebaseRepository<order_model.Order> {
     fromMap: (map) => order_model.Order.fromJson(map),
     toMap: (order) => order.toJson(),
   );
+
+  /// Auto-complete orders where delivery date has passed
+  /// This runs in the background when orders are loaded
+  Future<void> autoCompletePastDueOrders() async {
+    try {
+      final now = DateTime.now();
+      final startOfToday = DateTime(now.year, now.month, now.day);
+      
+      // Get all non-completed, non-cancelled orders with delivery date before today
+      final queryRef = query()
+          .where(FirestoreFields.status, whereIn: ['pending', 'inProgress']);
+      
+      final orders = await getWithQuery(queryRef);
+      
+      for (final order in orders) {
+        // If delivery date exists and is before today, mark as completed
+        if (order.deliveryDate != null && order.deliveryDate!.isBefore(startOfToday)) {
+          debugPrint('Auto-completing past-due order: ${order.id} (${order.name}) - delivery was ${order.deliveryDate}');
+          final updatedOrder = order.copyWith(
+            status: order_model.OrderStatus.completed,
+            updatedAt: DateTime.now(),
+          );
+          await update(order.id, updatedOrder);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error auto-completing past-due orders: $e');
+    }
+  }
 
   // Get orders by status
   Future<List<order_model.Order>> getOrdersByStatus(String status) async {

@@ -20,6 +20,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    // Auto-complete any past-due orders when screen loads
+    _repository.autoCompletePastDueOrders();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<Order>>(
       stream: _repository.getStream(),

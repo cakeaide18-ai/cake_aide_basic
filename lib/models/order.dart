@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum OrderStatus {
   pending,
@@ -65,6 +66,14 @@ class Order {
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
+    // Helper to parse DateTime from various formats (Timestamp, String, or null)
+    DateTime? parseDateTime(dynamic value) {
+      if (value == null) return null;
+      if (value is Timestamp) return value.toDate();
+      if (value is String) return DateTime.tryParse(value);
+      return null;
+    }
+    
     return Order(
       id: json['id'] ?? '',
       name: json['name'] ?? '',
@@ -75,8 +84,8 @@ class Order {
         (e) => e.name == json['status'],
         orElse: () => OrderStatus.pending,
       ),
-      orderDate: json['orderDate'] != null ? DateTime.parse(json['orderDate']) : null,
-      deliveryDate: json['deliveryDate'] != null ? DateTime.parse(json['deliveryDate']) : null,
+      orderDate: parseDateTime(json['orderDate']),
+      deliveryDate: parseDateTime(json['deliveryDate']),
       deliveryTime: json['deliveryTime'] != null
           ? TimeOfDay(
               hour: int.parse(json['deliveryTime'].split(':')[0]),
@@ -90,8 +99,8 @@ class Order {
       isCustomDesign: json['isCustomDesign'] ?? false,
       customDesignNotes: json['customDesignNotes'] ?? '',
       imageUrls: List<String>.from(json['imageUrls'] ?? []),
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      createdAt: parseDateTime(json['createdAt']) ?? DateTime.now(),
+      updatedAt: parseDateTime(json['updatedAt']) ?? DateTime.now(),
     );
   }
 
